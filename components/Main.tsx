@@ -205,11 +205,6 @@ export default function Main() {
     return () => darkModeMediaQuery.removeEventListener('change', handleSystemThemeChange);
   }, [config.theme]);
 
-  useEffect(() => {
-    if (!ready) return;
-    void broadcastToTabs({ type: 'updateSelectionTranslatorMode', mode: config.selectionTranslatorMode });
-  }, [config.selectionTranslatorMode, ready]);
-
   function updateTheme(theme: string) {
     const isDark = theme === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : theme === 'dark';
     document.documentElement.classList.toggle('dark', isDark);
@@ -233,16 +228,6 @@ export default function Main() {
     updateConfig((draft) => {
       draft[mapName] = { ...draft[mapName], [service]: value };
     });
-  }
-
-  async function broadcastToTabs(message: Record<string, unknown>) {
-    const tabs = await browser.tabs.query({});
-    await Promise.all(
-      tabs.map((tab) => {
-        if (!tab.id) return Promise.resolve();
-        return browser.tabs.sendMessage(tab.id, message).catch(() => undefined);
-      }),
-    );
   }
 
   async function translateCurrentPage() {
@@ -276,14 +261,7 @@ export default function Main() {
   function handlePluginStateChange(value: boolean) {
     updateConfig((draft) => {
       draft.on = value;
-      if (!value) {
-        draft.selectionTranslatorMode = 'disabled';
-      }
     });
-
-    if (!value) {
-      void broadcastToTabs({ type: 'updateSelectionTranslatorMode', mode: 'disabled' });
-    }
   }
 
   function handleMouseHotkeyChange(value: string) {
@@ -455,18 +433,6 @@ export default function Main() {
                 </div>
               )}
             </div>
-          </SettingRow>
-
-          <SettingRow label="划词翻译" hint="选中文本后显示红点，鼠标移到红点上查看翻译结果">
-            <SelectControl
-              value={config.selectionTranslatorMode}
-              options={[
-                { label: '关闭', value: 'disabled' },
-                { label: '双语显示', value: 'bilingual' },
-                { label: '只显示译文', value: 'translation-only' },
-              ]}
-              onChange={(value) => setField('selectionTranslatorMode', value)}
-            />
           </SettingRow>
 
           {computed.showToken && (

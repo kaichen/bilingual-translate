@@ -4,7 +4,6 @@ import { constants } from "@/entrypoints/utils/constant";
 import { getCenterPoint } from "@/entrypoints/utils/common";
 import './style.css';
 import { config, configReady } from "@/entrypoints/utils/config";
-import { mountSelectionTranslator, unmountSelectionTranslator } from "@/entrypoints/utils/selectionTranslator";
 import { cancelAllTranslations, translateText } from "@/entrypoints/utils/translateApi";
 import { mountNewApiComponent } from "@/entrypoints/utils/newApi";
 
@@ -19,11 +18,6 @@ export default defineContentScript({
         // 添加自动翻译事件监听器
         if (config.autoTranslate) autoTranslationEvent();
         
-        // 挂载划词翻译组件（如果配置未禁用）
-        if (config.disableSelectionTranslator !== true) {
-            mountSelectionTranslator();
-        }
-        
         mountNewApiComponent();
 
         cache.cleaner();    // 检测是否清理缓存
@@ -33,26 +27,6 @@ export default defineContentScript({
             if (message.message === 'clearCache') cache.clean()
             sendResponse();
             return true;
-        });
-        
-        // 处理划词翻译控制消息
-        browser.runtime.onMessage.addListener((message: any, sender: any, sendResponse: () => void) => {
-            if (message.type === 'updateSelectionTranslatorMode') {
-                // 更新配置
-                config.selectionTranslatorMode = message.mode;
-                
-                if (message.mode === 'disabled') {
-                    unmountSelectionTranslator();
-                } else {
-                    // 如果之前没有挂载，现在挂载
-                    if (!document.getElementById('bilingual-translate-selection-translator-container')) {
-                        mountSelectionTranslator();
-                    }
-                }
-                sendResponse();
-                return true;
-            }
-            return false;
         });
         
         // 处理右键菜单触发的全文翻译和撤销
@@ -83,8 +57,6 @@ export default defineContentScript({
         window.addEventListener('beforeunload', () => {
             // 取消所有待处理的翻译任务
             cancelAllTranslations();
-            // 移除划词翻译组件
-            unmountSelectionTranslator();
         });
     }
 })

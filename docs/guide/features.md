@@ -16,11 +16,6 @@ bilingual translate 提供了丰富的功能特性，让你的阅读体验更加
 
 ## 智能功能
 
-### 划词翻译
-划词翻译功能让你只需选中任意文本，就会在旁边显示一个小红点指示器。将鼠标移到红点上，即可查看该文本的翻译结果，并可一键复制译文，大幅提高阅读和学习效率。
-
-<img src="/highlight_trans.png" alt="划词翻译" style="width: 60%; max-width: 100%;border: 1px solid #eee;border-radius: 4px;box-shadow: 0 1px 2px rgba(0,0,0,0.05);" />
-
 ### 全文翻译
 你可以通过设置面板的“翻译当前网页”按钮或浏览器右键菜单翻译整个网页内容，无需刷新页面即可在原文与翻译之间切换。
 

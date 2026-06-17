@@ -4,7 +4,7 @@
 
 ## 项目简介
 
-**bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、划词翻译、全文翻译、输入框翻译，集成 20+ 翻译引擎（机器翻译 + AI 大模型）。
+**bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、全文翻译、悬停翻译、输入框翻译，集成 20+ 翻译引擎（机器翻译 + AI 大模型）。
 
 技术栈：**WXT 0.20** + **React 19** + **TypeScript**，浏览器扩展 Manifest V3，目标 Chrome / Edge / Firefox。
 
@@ -38,7 +38,7 @@ entrypoints/
   popup/               # 设置面板入口（App.tsx → Header/Main/Footer）
   service/             # 各翻译服务实现，_service.ts 为分发表
   utils/               # config / option / model / template / cache / 队列等
-components/            # React 组件：SelectionTranslator、Main 等
+components/            # React 组件：Main、CustomHotkeyInput 等
 styles/ + entrypoints/style.css   # 主题变量与译文样式
 docs/                  # Markdown 用户文档（非源码），由 scripts/build-docs.mjs 输出静态 HTML
 ```
@@ -46,7 +46,7 @@ docs/                  # Markdown 用户文档（非源码），由 scripts/buil
 ## 核心架构
 
 ### 翻译数据流
-1. 触发（快捷键/悬停/全文/划词）→ `main/trans.ts`
+1. 触发（快捷键/悬停/全文）→ `main/trans.ts`
 2. `main/dom.ts` 的 `grabNode` 决定翻译哪个 DOM 节点（`main/compat.ts` 按域名特殊处理）
 3. `utils/translateApi.ts` 统一入口：缓存命中 → 队列(`translateQueue.ts`) → `browser.runtime.sendMessage`
 4. `background.ts` 收到消息 → `_service[config.service](message)` 调用具体服务

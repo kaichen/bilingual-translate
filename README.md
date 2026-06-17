@@ -11,7 +11,7 @@
 
 - **智能翻译**：支持 20+ 种翻译引擎，包括传统翻译和 AI 大模型。如：微软翻译、谷歌翻译、DeepL翻译、OpenAI、DeepSeek、Kimi、Ollama、自定义引擎等。
 - **双语对照**：支持原文与译文并列显示，让阅读更轻松。
-- **划词翻译**：选中任意文本，即可获得即时翻译结果，一键复制译文，提高阅读效率。
+- **悬停翻译**：按住快捷键并悬停文本即可获得即时翻译结果，提高阅读效率。
 - **全文翻译**：通过设置面板或右键菜单一键翻译整个网页，无需刷新页面即可切换。
 - **隐私保护**：所有数据本地存储，代码开源透明。
 - **高度定制**：丰富的自定义选项，满足不同场景需求。
@@ -20,8 +20,6 @@
 <kbd><img src="./misc/sample-git-1.gif" alt="sample-git-1.gif" style="width: 80%; max-width: 100%;border: 1px solid black;"></kbd>
 
 <kbd><img src="./misc/sample-git-4.gif" alt="sample-git-4.gif" style="width: 80%; max-width: 100%;border: 1px solid black;"></kbd>
-
-<kbd><img src="./misc/highlight_trans.png" alt="sample-git-4.gif" style="width: 80%; max-width: 100%;border: 1px solid black;"></kbd>
 
 ## 📦 安装
 

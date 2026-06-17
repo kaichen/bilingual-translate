@@ -23,7 +23,9 @@ export default defineContentScript({
 
         // background.ts
         browser.runtime.onMessage.addListener((message: { message: string; }, sender: any, sendResponse: () => void) => {
-            if (message.message === 'clearCache') cache.clean()
+            if (message.message !== 'clearCache') return false;
+
+            cache.clean()
             sendResponse();
             return true;
         });

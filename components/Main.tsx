@@ -266,7 +266,9 @@ export default function Main() {
         action: translatePageActive ? 'restore' : 'fullPage',
       })) as TranslatePageResponse;
 
-      if (response?.status !== 'success') throw new Error('内容脚本未返回成功状态');
+      if (response?.status !== 'success') {
+        throw new Error(`内容脚本未返回成功状态: ${JSON.stringify(response)}`);
+      }
 
       const nextActive = response.action === 'translated';
       setTranslatePageActive(nextActive);

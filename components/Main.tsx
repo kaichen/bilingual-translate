@@ -149,7 +149,6 @@ export default function Main() {
   const [ready, setReady] = useState(false);
   const [translatePageLoading, setTranslatePageLoading] = useState(false);
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
-  const [showCustomHotkeyDialog, setShowCustomHotkeyDialog] = useState(false);
   const [showCustomMouseHotkeyDialog, setShowCustomMouseHotkeyDialog] = useState(false);
   const [showExportBox, setShowExportBox] = useState(false);
   const [exportData, setExportData] = useState('');
@@ -278,26 +277,12 @@ export default function Main() {
     updateConfig((draft) => {
       draft.on = value;
       if (!value) {
-        draft.disableFloatingBall = true;
         draft.selectionTranslatorMode = 'disabled';
       }
     });
 
     if (!value) {
-      void broadcastToTabs({ type: 'toggleFloatingBall', isEnabled: false });
       void broadcastToTabs({ type: 'updateSelectionTranslatorMode', mode: 'disabled' });
-    }
-  }
-
-  function handleFloatingBallEnabled(value: boolean) {
-    setField('disableFloatingBall', !value);
-    void broadcastToTabs({ type: 'toggleFloatingBall', isEnabled: value });
-  }
-
-  function handleHotkeyChange(value: string) {
-    setField('floatingBallHotkey', value);
-    if (value === 'custom' && !config.customFloatingBallHotkey) {
-      window.setTimeout(() => setShowCustomHotkeyDialog(true), 100);
     }
   }
 
@@ -306,13 +291,6 @@ export default function Main() {
     if (value === 'custom' && !config.customHotkey) {
       window.setTimeout(() => setShowCustomMouseHotkeyDialog(true), 100);
     }
-  }
-
-  function getCustomHotkeyDisplayName() {
-    if (!config.customFloatingBallHotkey) return '';
-    if (config.customFloatingBallHotkey === 'none') return '已禁用';
-    const parsed = parseHotkey(config.customFloatingBallHotkey);
-    return parsed.isValid ? parsed.displayName : config.customFloatingBallHotkey;
   }
 
   function getCustomMouseHotkeyDisplayName() {
@@ -420,8 +398,6 @@ export default function Main() {
     }));
   }, []);
 
-  const floatingBallEnabled = !config.disableFloatingBall && config.on;
-
   return (
     <div className="bt-main-panel">
       {toast && <div className={`bt-toast ${toast.type}`}>{toast.message}</div>}
@@ -476,20 +452,6 @@ export default function Main() {
                     {config.customHotkey ? getCustomMouseHotkeyDisplayName() : '点击设置自定义快捷键'}
                   </span>
                   <button className="bt-button text bt-compact-button" type="button" onClick={() => setShowCustomMouseHotkeyDialog(true)}>编辑</button>
-                </div>
-              )}
-            </div>
-          </SettingRow>
-
-          <SettingRow label="全文翻译快捷键" hint="设置快捷键以便快速切换全文翻译状态，无需鼠标点击悬浮球">
-            <div className="bt-hotkey-config">
-              <SelectControl value={config.floatingBallHotkey} options={options.floatingBallHotkeys} onChange={handleHotkeyChange} />
-              {config.floatingBallHotkey === 'custom' && (
-                <div className="bt-custom-hotkey-display">
-                  <span className={`bt-hotkey-text ${config.customFloatingBallHotkey ? '' : 'placeholder-text'}`}>
-                    {config.customFloatingBallHotkey ? getCustomHotkeyDisplayName() : '点击设置自定义快捷键'}
-                  </span>
-                  <button className="bt-button text bt-compact-button" type="button" onClick={() => setShowCustomHotkeyDialog(true)}>编辑</button>
                 </div>
               )}
             </div>
@@ -612,14 +574,6 @@ export default function Main() {
               <SwitchControl checked={config.useCache} onChange={(value) => setField('useCache', value)} />
             </SettingRow>
 
-            <SettingRow label="全文翻译悬浮球" hint="控制是否显示屏幕边缘的即时翻译悬浮球">
-              <SwitchControl checked={floatingBallEnabled} onChange={handleFloatingBallEnabled} />
-            </SettingRow>
-
-            <SettingRow label="翻译进度面板" hint="关闭后将不再显示右下角的全文翻译进度面板">
-              <SwitchControl checked={config.translationStatus} onChange={(value) => setField('translationStatus', value)} />
-            </SettingRow>
-
             <SettingRow label="动画效果" hint="禁用后将关闭加载/悬浮等动画">
               <SwitchControl checked={config.animations} onChange={(value) => setField('animations', value)} />
             </SettingRow>
@@ -693,22 +647,6 @@ export default function Main() {
           </details>
         </>
       )}
-
-      <CustomHotkeyInput
-        open={showCustomHotkeyDialog}
-        currentValue={config.customFloatingBallHotkey}
-        onOpenChange={setShowCustomHotkeyDialog}
-        onConfirm={(hotkey) => {
-          updateConfig((draft) => {
-            draft.customFloatingBallHotkey = hotkey;
-            draft.floatingBallHotkey = 'custom';
-          });
-          notify('success', hotkey === 'none' ? '已禁用快捷键' : `快捷键已设置为: ${parseHotkey(hotkey).displayName || hotkey}`);
-        }}
-        onCancel={() => {
-          if (!config.customFloatingBallHotkey) setField('floatingBallHotkey', 'Alt+T');
-        }}
-      />
 
       <CustomHotkeyInput
         open={showCustomMouseHotkeyDialog}

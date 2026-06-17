@@ -345,22 +345,6 @@ export const options = {
         {value: 22, label: "半透明弱化", class: "bilingual-display-dimmed", group: "transparent"},
         {value: 23, label: "轻透明感", class: "bilingual-display-transparent-mode", group: "transparent"},
     ],
-    // 悬浮球快捷键选项
-    floatingBallHotkeys: [
-        {value: "none", label: "禁用快捷键"},
-        {value: "Alt+T", label: "Alt+T / Option+T (默认)"},
-        {value: "Alt+A", label: "Alt+A / Option+A"},
-        {value: "Alt+S", label: "Alt+S / Option+S"},
-        {value: "Alt+D", label: "Alt+D / Option+D"},
-        {value: "Alt+Q", label: "Alt+Q / Option+Q"},
-        {value: "Ctrl+Shift+T", label: "Ctrl+Shift+T / Control+Shift+T"},
-        {value: "Ctrl+Shift+A", label: "Ctrl+Shift+A / Control+Shift+A"},
-        {value: "F9", label: "F9"},
-        {value: "F10", label: "F10"},
-        {value: "F11", label: "F11"},
-        {value: "F12", label: "F12"},
-        {value: "custom", label: "自定义快捷键（测试版）"},
-    ],
     theme: [
         {value: "auto", label: "跟随操作系统"},
         {value: "light", label: "亮色主题"},
@@ -405,8 +389,6 @@ export const defaultOption = {
 {{origin}}`,
     count: 0,
     useCache: true,
-    floatingBallHotkey: "Alt+T", // 默认悬浮球快捷键
     inputBoxTranslationTrigger: "disabled", // 默认关闭输入框翻译
     inputBoxTranslationTarget: "en", // 默认翻译成英文
 };
-

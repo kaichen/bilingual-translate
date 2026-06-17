@@ -38,7 +38,7 @@ entrypoints/
   popup/               # 设置面板入口（App.tsx → Header/Main/Footer）
   service/             # 各翻译服务实现，_service.ts 为分发表
   utils/               # config / option / model / template / cache / 队列等
-components/            # React 组件：FloatingBall、SelectionTranslator、TranslationStatus、Main 等
+components/            # React 组件：SelectionTranslator、Main 等
 styles/ + entrypoints/style.css   # 主题变量与译文样式
 docs/                  # Markdown 用户文档（非源码），由 scripts/build-docs.mjs 输出静态 HTML
 ```

@@ -34,10 +34,6 @@ export class Config {
     count: number;  // 翻译次数
     theme: string;  // 主题模式：'auto' | 'light' | 'dark'
     useCache: boolean; // 是否使用缓存
-    disableFloatingBall: boolean; // 是否禁用悬浮球
-    floatingBallPosition: 'left' | 'right'; // 悬浮球位置
-    floatingBallHotkey: string; // 悬浮球快捷键
-    customFloatingBallHotkey: string; // 自定义悬浮球快捷键
     customHotkey: string; // 自定义鼠标悬浮快捷键
     disableSelectionTranslator: boolean; // 是否禁用划词翻译
     deeplx: string; // DeepLX 服务地址
@@ -50,7 +46,6 @@ export class Config {
     tencentSecretKey: string; // 腾讯云 Secret Key
     azureOpenaiEndpoint: string; // Azure OpenAI 端点地址
     animations: boolean; // 是否启用动画效果
-    translationStatus: boolean; // 是否启用全文翻译进度面板
     inputBoxTranslationTrigger: string; // 输入框翻译触发方式
     inputBoxTranslationTarget: string; // 输入框翻译目标语言
 
@@ -79,10 +74,6 @@ export class Config {
         this.count = 0;
         this.theme = 'auto';  // 默认跟随系统
         this.useCache = true; // 默认开启缓存
-        this.disableFloatingBall = false; // 默认启用悬浮球
-        this.floatingBallPosition = 'right'; // 默认在右侧
-        this.floatingBallHotkey = 'Alt+T'; // 默认快捷键为 Alt+T
-        this.customFloatingBallHotkey = ''; // 自定义快捷键为空
         this.customHotkey = ''; // 自定义鼠标悬浮快捷键为空
         this.disableSelectionTranslator = false; // 默认不禁用划词翻译
         this.deeplx = ''; // DeepLX 默认服务地址
@@ -95,7 +86,6 @@ export class Config {
         this.tencentSecretKey = ''; // 腾讯云 Secret Key
         this.azureOpenaiEndpoint = ''; // Azure OpenAI 端点地址
         this.animations = true; // 默认启用动画
-        this.translationStatus = true; // 默认启用翻译进度面板
         this.inputBoxTranslationTrigger = 'disabled'; // 默认关闭输入框翻译
         this.inputBoxTranslationTarget = 'en'; // 默认翻译成英文
     }

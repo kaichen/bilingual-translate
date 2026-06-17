@@ -5,12 +5,6 @@
 <img src="/basic-config.png" alt="基本设置" style="width: 40%; max-width: 100%;border: 1px solid #eee;border-radius: 4px;box-shadow: 0 1px 2px rgba(0,0,0,0.05);" />
 
 
-## 插件状态
-
-插件状态开关控制整个插件的启用/禁用。你可以通过点击开关快速切换插件状态：
-- 开启：插件正常工作，可以使用所有翻译功能
-- 关闭：暂时禁用插件，不会触发任何翻译操作
-
 ## 翻译模式
 
 ### 双语对照/仅译文

@@ -11,6 +11,11 @@ type ToastType = 'success' | 'warning' | 'error';
 
 type TranslatePageResponse = {
   status?: string;
+  action?: string;
+};
+
+type TranslationStateResponse = {
+  isTranslated?: boolean;
 };
 
 type SelectOption = {
@@ -148,6 +153,7 @@ export default function Main() {
   const [config, setConfig] = useState(() => new Config());
   const [ready, setReady] = useState(false);
   const [translatePageLoading, setTranslatePageLoading] = useState(false);
+  const [translatePageActive, setTranslatePageActive] = useState(false);
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
   const [showCustomMouseHotkeyDialog, setShowCustomMouseHotkeyDialog] = useState(false);
   const [showExportBox, setShowExportBox] = useState(false);
@@ -169,6 +175,7 @@ export default function Main() {
       if (typeof value === 'string' && value) {
         Object.assign(nextConfig, JSON.parse(value));
       }
+      nextConfig.on = true;
       suppressPersistRef.current = true;
       setConfig(nextConfig);
       setReady(true);
@@ -195,6 +202,20 @@ export default function Main() {
   useEffect(() => {
     updateTheme(config.theme || 'auto');
   }, [config.theme]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    void browser.tabs.query({ active: true, currentWindow: true }).then(async (tabs) => {
+      const tabId = tabs[0]?.id;
+      if (!tabId) return;
+      const response = (await browser.runtime.sendMessage({
+        type: 'getTranslationState',
+        tabId,
+      })) as TranslationStateResponse;
+      setTranslatePageActive(Boolean(response?.isTranslated));
+    }).catch(() => undefined);
+  }, [ready]);
 
   useEffect(() => {
     const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -231,7 +252,7 @@ export default function Main() {
   }
 
   async function translateCurrentPage() {
-    if (!config.on || translatePageLoading) return;
+    if (translatePageLoading) return;
 
     setTranslatePageLoading(true);
     try {
@@ -241,27 +262,25 @@ export default function Main() {
 
       const response = (await browser.tabs.sendMessage(tabId, {
         type: 'contextMenuTranslate',
-        action: 'fullPage',
+        action: translatePageActive ? 'restore' : 'fullPage',
       })) as TranslatePageResponse;
 
-      if (response?.status === 'disabled') {
-        notify('warning', '插件已关闭，无法翻译当前网页');
-        return;
-      }
+      if (response?.status !== 'success') throw new Error('内容脚本未返回成功状态');
 
-      notify('success', '已开始翻译当前网页');
+      const nextActive = response.action === 'translated';
+      setTranslatePageActive(nextActive);
+      void browser.runtime.sendMessage({
+        type: 'setTranslationState',
+        tabId,
+        isTranslated: nextActive,
+      }).catch(() => undefined);
+      notify('success', nextActive ? '已开始翻译当前网页' : '已移除当前网页翻译');
     } catch (error) {
       console.error('触发当前网页翻译失败:', error);
-      notify('error', '无法翻译当前网页，请刷新页面后重试');
+      notify('error', translatePageActive ? '无法移除翻译，请刷新页面后重试' : '无法翻译当前网页，请刷新页面后重试');
     } finally {
       setTranslatePageLoading(false);
     }
-  }
-
-  function handlePluginStateChange(value: boolean) {
-    updateConfig((draft) => {
-      draft.on = value;
-    });
   }
 
   function handleMouseHotkeyChange(value: string) {
@@ -330,6 +349,7 @@ export default function Main() {
         return;
       }
       const nextConfig = Object.assign(new Config(), parsedConfig);
+      nextConfig.on = true;
       suppressPersistRef.current = true;
       setConfig(nextConfig);
       await storage.setItem('local:config', JSON.stringify(nextConfig));
@@ -380,20 +400,17 @@ export default function Main() {
     <div className="bt-main-panel">
       {toast && <div className={`bt-toast ${toast.type}`}>{toast.message}</div>}
 
-      <SettingRow label="插件状态">
-        <SwitchControl checked={config.on} onChange={handlePluginStateChange} />
-      </SettingRow>
-
-      {!config.on && <div className="bt-empty-state">插件处于禁用状态</div>}
-
-      {config.on && (
-        <>
-          <div className="bt-setting-row wide">
-            <button className="bt-button primary bt-full-width" type="button" onClick={translateCurrentPage} disabled={translatePageLoading || !config.on}>
-              {translatePageLoading && <span className="bt-loading-dot" />}
-              翻译当前网页
-            </button>
-          </div>
+      <div className="bt-setting-row wide">
+        <button
+          className={`bt-button ${translatePageActive ? 'success' : 'primary'} bt-full-width`}
+          type="button"
+          onClick={translateCurrentPage}
+          disabled={translatePageLoading}
+        >
+          {translatePageLoading && <span className="bt-loading-dot" />}
+          {translatePageActive ? '移除翻译' : '翻译当前网页'}
+        </button>
+      </div>
 
           <SettingRow label="翻译模式">
             <SelectControl value={config.display} options={options.display} onChange={(value) => setField('display', Number(value))} />
@@ -611,8 +628,6 @@ export default function Main() {
               </div>
             )}
           </details>
-        </>
-      )}
 
       <CustomHotkeyInput
         open={showCustomMouseHotkeyDialog}

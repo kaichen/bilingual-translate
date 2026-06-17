@@ -4,10 +4,7 @@ import { config } from "@/entrypoints/utils/config";
 
 // Check configuration before translation
 export function checkConfig(): boolean {
-    // 1. Check if the plugin is enabled
-    if (!config.on) return false;
-
-    // 2. Check if the token is provided for services that require it
+    // 1. Check if the token is provided for services that require it
     if (servicesType.isUseToken(config.service) && !config.token[config.service]) {
         // DeepLX 的令牌是可选的，不需要强制检查
         if (config.service === services.deeplx) {
@@ -28,7 +25,7 @@ export function checkConfig(): boolean {
         return false;
     }
 
-    // 3. Check if a model is selected for AI services (except specific services like Coze)
+    // 2. Check if a model is selected for AI services (except specific services like Coze)
     if (servicesType.isAI(config.service) && ![services.cozecn, services.cozecom].includes(config.service)) {
         const model = config.model[config.service];
         const customModel = config.customModel[config.service];

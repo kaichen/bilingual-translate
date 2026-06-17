@@ -205,10 +205,6 @@ export const models = new Map<string, Array<string>>([
 ]);
 
 export const options = {
-    on: [
-        {value: true, label: "开启"},
-        {value: false, label: "关闭"},
-    ],
     // 是否即时翻译
     autoTranslate: [
         {value: true, label: "开启"},

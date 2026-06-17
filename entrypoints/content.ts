@@ -12,7 +12,6 @@ export default defineContentScript({
     runAt: 'document_end',  // 在页面加载完成后运行
     async main() {
         await configReady // 等待配置加载完成
-        if (config.on === false) return; // 如果配置关闭，则不执行任何操作
         // 添加手动翻译事件监听器
         setupManualTranslationTriggers();
         // 添加自动翻译事件监听器
@@ -32,12 +31,6 @@ export default defineContentScript({
         // 处理右键菜单触发的全文翻译和撤销
         browser.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (response?: any) => void) => {
             if (message.type === 'contextMenuTranslate') {
-                // 检查插件是否已启用
-                if (config.on === false) {
-                    sendResponse({ status: 'disabled' });
-                    return true;
-                }
-                
                 if (message.action === 'fullPage') {
                     // 触发全文翻译
                     autoTranslateEnglishPage();
@@ -227,9 +220,7 @@ function setupManualTranslationTriggers() {
         // 如果当前按键集合为空，且之前激活了快捷键，且配置的快捷键不包含当前释放的键，则触发翻译
         if (screen.hotkeyPressed && mouseHotkeysPressed.size === 0 && !screen.otherKeyPressed && !screen.hasSlideTranslation) {
             // 检查插件是否开启
-            if (config.on) {
-                handleTranslation(screen.mouseX, screen.mouseY);
-            }
+            handleTranslation(screen.mouseX, screen.mouseY);
         }
         
         // 如果所有按键都释放了，重置状态
@@ -244,7 +235,7 @@ function setupManualTranslationTriggers() {
     document.body.addEventListener('mousemove', event => {
         screen.mouseX = event.clientX;
         screen.mouseY = event.clientY;
-        if (screen.hotkeyPressed && config.on) {
+        if (screen.hotkeyPressed) {
             screen.hasSlideTranslation = true;
             handleTranslation(screen.mouseX, screen.mouseY, 50)
         }
@@ -268,14 +259,12 @@ function setupManualTranslationTriggers() {
         }
 
         // 检查插件是否开启
-        if (config.on) {
-            handleTranslation(coordinate!.x, coordinate!.y);
-        }
+        handleTranslation(coordinate!.x, coordinate!.y);
     });
 
     // 6、双击鼠标翻译事件
     document.body.addEventListener('dblclick', event => {
-        if (config.hotkey == constants.DoubleClick && config.on) {
+        if (config.hotkey == constants.DoubleClick) {
             // 通过双击事件获取鼠标位置
             let mouseX = event.clientX;
             let mouseY = event.clientY;
@@ -294,11 +283,9 @@ function setupManualTranslationTriggers() {
             startPos.x = event.clientX; // 记录鼠标按下时的初始位置
             startPos.y = event.clientY;
             timer = setTimeout(() => {
-                if (config.on) {
-                    let mouseX = event.clientX;
-                    let mouseY = event.clientY;
-                    handleTranslation(mouseX, mouseY);
-                }
+                let mouseX = event.clientX;
+                let mouseY = event.clientY;
+                handleTranslation(mouseX, mouseY);
             }, 500) as unknown as number;
         }
     });
@@ -319,7 +306,7 @@ function setupManualTranslationTriggers() {
 
     // 8、鼠标中键翻译事件
     document.body.addEventListener('mousedown', event => {
-        if (config.hotkey === constants.MiddleClick && config.on) {
+        if (config.hotkey === constants.MiddleClick) {
             if (event.button === 1) {
                 let mouseX = event.clientX;
                 let mouseY = event.clientY;
@@ -349,9 +336,7 @@ function setupManualTranslationTriggers() {
             // 如果达到了所需的触摸次数，清除定时器并调用翻译处理函数
             clearTimeout(touchTimer);
             touchCount = 0;
-            if (config.on) {
-                handleTranslation(event.touches[0].clientX, event.touches[0].clientY);
-            }
+            handleTranslation(event.touches[0].clientX, event.touches[0].clientY);
         }
     });
 }

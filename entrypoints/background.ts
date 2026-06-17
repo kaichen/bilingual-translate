@@ -167,6 +167,18 @@ export default defineBackground({
         browser.runtime.onMessage.addListener((message: any) => {
             return new Promise(async (resolve, reject) => {
                 try {
+                    if (message.type === 'getTranslationState') {
+                        resolve({ isTranslated: translationStateMap.get(message.tabId) || false });
+                        return;
+                    }
+
+                    if (message.type === 'setTranslationState') {
+                        translationStateMap.set(message.tabId, Boolean(message.isTranslated));
+                        if (isContextMenuSupported) updateContextMenus(message.tabId);
+                        resolve({ success: true });
+                        return;
+                    }
+
                     // 处理输入框翻译请求
                     if (message.type === 'inputBoxTranslation') {
                         const translatedText = await translateWithMicrosoftInBackground(message.text, message.targetLang);

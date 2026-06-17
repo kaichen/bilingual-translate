@@ -1,0 +1,12 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "jsx": "react-jsx"
+  },
+  "exclude": [
+    ".output",
+    "node_modules",
+    "vendor"
+  ]
+}

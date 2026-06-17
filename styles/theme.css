@@ -1,0 +1,50 @@
+/* 基础变量 */
+:root {
+  --bt-bg-color: #ffffff;
+  --bt-text-color: #000000;
+  --bt-border-color: #dcdfe6;
+  --bt-hover-color: #f5f7fa;
+  --bt-popup-bg-color: #ffffff;
+  --bt-text-color-regular: #606266;
+  --bt-text-color-primary: #303133;
+  --bt-text-color-placeholder: #a8abb2;
+  --bt-border-color-lighter: #e4e7ed;
+  --bt-border-color-light: #dcdfe6;
+  --bt-bg-color-darker: #0a0a0a;
+  --bt-color-primary: #409eff;
+  --bt-color-success: #67c23a;
+  --bt-color-warning: #e6a23c;
+  --bt-color-danger: #f56c6c;
+  color-scheme: light;
+}
+
+/* 全局基础前景/背景，确保 Popup 与页面根节点使用变量 */
+html, body, #app {
+  background-color: var(--bt-bg-color);
+  color: var(--bt-text-color);
+}
+
+/* 深色模式变量 */
+:root.dark {
+  --bt-bg-color: #1a1a1a;
+  --bt-text-color: #ffffff;
+  --bt-border-color: #4c4c4c;
+  --bt-hover-color: #2c2c2c;
+  --bt-popup-bg-color: #1a1a1a;
+  --bt-fill-color-blank: #1a1a1a;
+  --bt-bg-color-overlay: #1a1a1a;
+  --bt-fill-color-light: #2c2c2c;
+  --bt-component-bg-color: #1a1a1a;
+  --bt-text-color-regular: #e5eaf3;
+  --bt-text-color-primary: #e5eaf3;
+  --bt-text-color-placeholder: #8d9095;
+  --bt-border-color-lighter: #414243;
+  --bt-border-color-light: #4c4c4c;
+  --bt-bg-color-darker: #0a0a0a;
+  color-scheme: dark;
+}
+
+/* 过渡动画 */
+* {
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}

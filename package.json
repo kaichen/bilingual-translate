@@ -1,0 +1,46 @@
+{
+  "name": "bilingual-translate",
+  "description": "一款革命性的浏览器开源翻译插件，让所有人都能够拥有母语般的阅读体验",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "test": "vitest run",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "docs:dev": "node scripts/serve-docs.mjs",
+    "docs:build": "node scripts/build-docs.mjs",
+    "docs:preview": "node scripts/serve-docs.mjs"
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.7.4",
+    "@wxt-dev/storage": "^1.0.1",
+    "crypto-js": "^4.2.0",
+    "franc-min": "^6.2.0",
+    "js-beautify": "^1.15.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "webextension-polyfill": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.1.43",
+    "@types/crypto-js": "^4.2.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/webextension-polyfill": "^0.12.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@wxt-dev/webextension-polyfill": "^1.0.0",
+    "happy-dom": "15.11.7",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.19",
+    "vitest": "2.1.9",
+    "wxt": "^0.20.18"
+  },
+  "packageManager": "pnpm@9.12.1+sha1.7084e7df42ee1d221994c2c2599277a2a937f050"
+}

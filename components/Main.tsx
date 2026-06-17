@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { storage } from '@wxt-dev/storage';
 import browser from 'webextension-polyfill';
 import { defaultOption, models, options, services, servicesType } from '../entrypoints/utils/option';
@@ -52,7 +53,7 @@ function SelectControl({
   placeholder?: string;
 }) {
   return (
-    <select className="bt-select" value={String(value)} onChange={(event) => onChange(event.target.value)} aria-label={placeholder}>
+    <select className="bt-select" value={String(value)} onChange={(event) => onChange(event.currentTarget.value)} aria-label={placeholder}>
       {placeholder && <option value="">{placeholder}</option>}
       {selectOptions.map((option) => (
         <option key={`${option.value}-${option.label}`} value={String(option.value)} disabled={option.disabled}>
@@ -82,7 +83,7 @@ function TextInput({
       value={value}
       type={type}
       placeholder={placeholder}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => onChange(event.currentTarget.value)}
     />
   );
 }
@@ -107,7 +108,7 @@ function TextArea({
       rows={rows}
       readOnly={readOnly}
       placeholder={placeholder}
-      onChange={(event) => onChange?.(event.target.value)}
+      onChange={(event) => onChange?.(event.currentTarget.value)}
     />
   );
 }
@@ -136,7 +137,7 @@ function SettingRow({
   label: string;
   hint?: string;
   wide?: boolean;
-  children: ReactNode;
+  children: ComponentChildren;
 }) {
   return (
     <div className={`bt-setting-row ${wide ? 'wide' : ''}`}>
@@ -418,7 +419,7 @@ export default function Main() {
 
           {config.display === 1 && (
             <SettingRow label="译文样式" hint="选择双语模式下译文的显示样式，提供多种美观的效果">
-              <select className="bt-select" value={String(config.style)} onChange={(event) => setField('style', Number(event.target.value))}>
+              <select className="bt-select" value={String(config.style)} onChange={(event) => setField('style', Number(event.currentTarget.value))}>
                 {styleGroups.map((group) => (
                   <optgroup key={String(group.value)} label={group.label}>
                     {group.options.map((item) => (
@@ -579,7 +580,7 @@ export default function Main() {
                 max={100}
                 step={1}
                 value={config.maxConcurrentTranslations}
-                onChange={(event) => handleConcurrentChange(event.target.value)}
+                onChange={(event) => handleConcurrentChange(event.currentTarget.value)}
               />
             </SettingRow>
 

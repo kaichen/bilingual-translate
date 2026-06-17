@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'preact/hooks';
 import { storage } from '@wxt-dev/storage';
 import browser from 'webextension-polyfill';
 import { Config } from '../entrypoints/utils/model';

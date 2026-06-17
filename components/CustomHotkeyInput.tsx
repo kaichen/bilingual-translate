@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import type { JSX } from 'preact';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { parseHotkey, validateHotkeyConflicts, type ParsedHotkey } from '@/entrypoints/utils/hotkey';
 import './popup-components.css';
 
@@ -78,7 +79,7 @@ export default function CustomHotkeyInput({
     window.requestAnimationFrame(() => inputFieldRef.current?.focus());
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleKeyDown(event: JSX.TargetedKeyboardEvent<HTMLDivElement>) {
     if (!isRecording) return;
 
     event.preventDefault();
@@ -122,7 +123,7 @@ export default function CustomHotkeyInput({
     setPressedKeys(nextKeys);
   }
 
-  function handleKeyUp(event: KeyboardEvent<HTMLDivElement>) {
+  function handleKeyUp(event: JSX.TargetedKeyboardEvent<HTMLDivElement>) {
     if (!isRecording) return;
 
     event.preventDefault();

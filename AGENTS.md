@@ -6,7 +6,7 @@
 
 **bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、全文翻译、悬停翻译、输入框翻译，集成 20+ 翻译引擎（机器翻译 + AI 大模型）。
 
-技术栈：**WXT 0.20** + **React 19** + **TypeScript**，浏览器扩展 Manifest V3，目标 Chrome / Edge / Firefox。
+技术栈：**WXT 0.20** + **Preact 10** + **TypeScript**，浏览器扩展 Manifest V3，目标 Chrome / Edge / Firefox。
 
 ## 环境与命令
 
@@ -29,7 +29,7 @@
 ```
 entrypoints/
   background.ts        # Service Worker：右键菜单、状态机、消息路由、Firefox CORS 规避
-  content.ts           # 内容脚本：注册所有翻译触发器、挂载 React 组件
+  content.ts           # 内容脚本：注册所有翻译触发器、挂载页面功能
   main/
     dom.ts             # 节点抓取核心：grabNode / grabAllNode，块级/内联/跳过判定
     trans.ts           # 翻译执行：悬停翻译、全文翻译(IntersectionObserver)、还原原文
@@ -38,7 +38,7 @@ entrypoints/
   popup/               # 设置面板入口（App.tsx → Header/Main/Footer）
   service/             # 各翻译服务实现，_service.ts 为分发表
   utils/               # config / option / model / template / cache / 队列等
-components/            # React 组件：Main、CustomHotkeyInput 等
+components/            # Preact 组件：Main、CustomHotkeyInput 等
 styles/ + entrypoints/style.css   # 主题变量与译文样式
 docs/                  # Markdown 用户文档（非源码），由 scripts/build-docs.mjs 输出静态 HTML
 ```

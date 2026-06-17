@@ -1,5 +1,5 @@
 import {defineConfig} from 'wxt';
-import react from '@vitejs/plugin-react';
+import preact from '@preact/preset-vite';
 import {resolve} from 'path';
 import fs from 'fs';
 
@@ -11,7 +11,7 @@ const packageJson = JSON.parse(fs.readFileSync(resolve(__dirname, 'package.json'
 export default defineConfig({
     modules: ['@wxt-dev/webextension-polyfill'],
     vite: () => ({
-        plugins: [react()],
+        plugins: [preact()],
         define: {
             'process.env.APP_VERSION': JSON.stringify(packageJson.version),
         }

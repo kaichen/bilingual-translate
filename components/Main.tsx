@@ -550,7 +550,7 @@ export default function Main() {
           )}
 
           <details className="bt-advanced-panel">
-            <summary>高级选项</summary>
+            <summary>更多选项</summary>
 
             <SettingRow label="主题设置">
               <SelectControl value={config.theme} options={options.theme} onChange={(value) => setField('theme', value)} />

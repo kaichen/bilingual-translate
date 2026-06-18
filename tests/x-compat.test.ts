@@ -76,6 +76,26 @@ describe("X.com site compatibility rule", () => {
     ]);
   });
 
+  it("selects long tweet bodies that exceed the generic text limit", () => {
+    const longTweetText = `Silver falls despite the Iran war. ${"Market liquidity contagion keeps moving through every position. ".repeat(90)}`.trim();
+    expect(longTweetText.length).toBeGreaterThan(4096);
+
+    document.body.innerHTML = `
+      <main role="main">
+        <section data-testid="primaryColumn">
+          <article data-testid="tweet">
+            <div data-testid="User-Name">@metals</div>
+            <div data-testid="tweetText" lang="en">${longTweetText}</div>
+          </article>
+        </section>
+      </main>
+    `;
+
+    expect(collectTranslationTargets(document.body).map(getTranslationTargetText)).toEqual([
+      longTweetText,
+    ]);
+  });
+
   it("selects tweet bodies from the photo view conversation rail without translating media or controls", () => {
     setXUrl(xPhotoUrl);
     document.body.innerHTML = `

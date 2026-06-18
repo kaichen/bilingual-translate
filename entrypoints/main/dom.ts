@@ -47,6 +47,11 @@ export const SOURCE_KEY_ATTR = 'data-bt-source-key';
 const TRANSLATED_ATTR = 'data-bt-translated';
 const TRANSLATED_ID_ATTR = 'data-bt-node-id';
 const TRANSLATION_UI_SELECTOR = '.bilingual-translate-bilingual-content, .bilingual-translate-loading, .bilingual-translate-retry-wrapper';
+const MIN_TRANSLATABLE_TEXT_LENGTH = 3;
+const MAX_TRANSLATABLE_TEXT_LENGTH = 3072;
+const MAX_TRANSLATABLE_OUTER_HTML_LENGTH = 4096;
+const MAX_X_TWEET_TEXT_LENGTH = 8192;
+const MAX_X_TWEET_OUTER_HTML_LENGTH = 12288;
 
 export type TranslationTarget =
     | {
@@ -336,8 +341,8 @@ function isValidNodeGroup(nodes: Node[]): boolean {
 
 function shouldSkipText(text: string): boolean {
     const normalizedText = text.trim();
-    return normalizedText.length < 3 ||
-        normalizedText.length > 3072 ||
+    return normalizedText.length < MIN_TRANSLATABLE_TEXT_LENGTH ||
+        normalizedText.length > MAX_TRANSLATABLE_TEXT_LENGTH ||
         isNumericContent(normalizedText) ||
         isUserIdentifier(normalizedText) ||
         isSimplePhraseText(normalizedText);
@@ -428,12 +433,29 @@ function shouldSkipNode(node: any, tag: string): boolean {
 
 // 检查文本长度
 function checkTextSize(node: any): boolean {
-    // 1. 若文本内容长度超过 3072
-    // 2. 或者 outerHTML 长度超过 4096，都视为过长
+    // 1. 若文本内容过长
+    // 2. 或者 outerHTML 过长，都视为过长
     // 3. 少于3个字符
-    return node.textContent.length > 3072 ||
-        (node.outerHTML && node.outerHTML.length > 4096) ||
-        node.textContent.length < 3;
+    const maxTextLength = getMaxTextLength(node);
+    const maxOuterHTMLLength = getMaxOuterHTMLLength(node);
+    return node.textContent.length > maxTextLength ||
+        (node.outerHTML && node.outerHTML.length > maxOuterHTMLLength) ||
+        node.textContent.length < MIN_TRANSLATABLE_TEXT_LENGTH;
+}
+
+function getMaxTextLength(node: any): number {
+    if (isXTweetTextNode(node)) return MAX_X_TWEET_TEXT_LENGTH;
+    return MAX_TRANSLATABLE_TEXT_LENGTH;
+}
+
+function getMaxOuterHTMLLength(node: any): number {
+    if (isXTweetTextNode(node)) return MAX_X_TWEET_OUTER_HTML_LENGTH;
+    return MAX_TRANSLATABLE_OUTER_HTML_LENGTH;
+}
+
+function isXTweetTextNode(node: any): boolean {
+    if (!node?.matches?.('[data-testid="tweetText"]')) return false;
+    return getMainDomain(location.href) === 'x.com';
 }
 
 function normalizeSimplePhraseText(text: string): string {

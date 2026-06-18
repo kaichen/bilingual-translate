@@ -1,8 +1,10 @@
 /* 基础变量 */
 :root {
   --bt-bg-color: #ffffff;
-  --bt-text-color: #000000;
-  --bt-border-color: #dcdfe6;
+  --bt-page-bg: #f2f3f5;
+  --bt-card-bg: #ffffff;
+  --bt-text-color: #1d2129;
+  --bt-border-color: #e3e6eb;
   --bt-hover-color: #f5f7fa;
   --bt-popup-bg-color: #ffffff;
   --bt-text-color-regular: #606266;
@@ -15,21 +17,29 @@
   --bt-color-success: #67c23a;
   --bt-color-warning: #e6a23c;
   --bt-color-danger: #f56c6c;
+  --bt-radius-sm: 8px;
+  --bt-radius-md: 12px;
+  --bt-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 18px rgba(0, 0, 0, 0.06);
+  --bt-shadow-btn: 0 4px 12px rgba(0, 0, 0, 0.12);
   color-scheme: light;
 }
 
 /* 全局基础前景/背景，确保 Popup 与页面根节点使用变量 */
 html, body, #app {
-  background-color: var(--bt-bg-color);
+  background-color: var(--bt-page-bg);
   color: var(--bt-text-color);
 }
 
 /* 深色模式变量 */
 :root.dark {
-  --bt-bg-color: #1a1a1a;
-  --bt-text-color: #ffffff;
-  --bt-border-color: #4c4c4c;
+  --bt-bg-color: #1f1f1f;
+  --bt-page-bg: #141414;
+  --bt-card-bg: #1f1f1f;
+  --bt-text-color: #e5eaf3;
+  --bt-border-color: #3a3a3a;
   --bt-hover-color: #2c2c2c;
+  --bt-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.45);
+  --bt-shadow-btn: 0 4px 12px rgba(0, 0, 0, 0.45);
   --bt-popup-bg-color: #1a1a1a;
   --bt-fill-color-blank: #1a1a1a;
   --bt-bg-color-overlay: #1a1a1a;

@@ -6,7 +6,7 @@
 
 **bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、全文翻译、悬停翻译、输入框翻译，集成 20+ 翻译引擎（机器翻译 + AI 大模型）。
 
-技术栈：**WXT 0.20** + **Preact 10** + **TypeScript**，浏览器扩展 Manifest V3，目标 Chrome / Edge / Firefox。
+技术栈：**WXT 0.20** + **Preact 10** + **TypeScript**，浏览器扩展 Manifest V3，目标 Chrome / Edge。
 
 ## 环境与命令
 
@@ -16,19 +16,18 @@
 | 命令 | 说明 |
 |------|------|
 | `pnpm dev` | Chrome 开发模式（热重载） |
-| `pnpm dev:firefox` | Firefox 开发模式 |
-| `pnpm build` / `pnpm build:firefox` | 生产构建 |
-| `pnpm zip` / `pnpm zip:firefox` | 打包为可上传商店的 zip |
-| `pnpm compile` | `tsc --noEmit` 类型检查（**提交前务必跑**，无单元测试） |
-| `pnpm docs:dev` | 本地预览静态文档 |
+| `pnpm build` | 生产构建 |
+| `pnpm zip` | 打包为可上传商店的 zip |
+| `pnpm test` | Vitest 单元测试 |
+| `pnpm compile` | `tsc --noEmit` 类型检查（**提交前务必跑**） |
 
-本仓库**没有测试套件**，验证靠 `pnpm compile` + 手动加载扩展实测。
+验证以 `pnpm test` + `pnpm compile` + 手动加载扩展实测为主。
 
 ## 目录结构
 
 ```
 entrypoints/
-  background.ts        # Service Worker：右键菜单、状态机、消息路由、Firefox CORS 规避
+  background.ts        # Service Worker：右键菜单、状态机、消息路由、跨上下文请求
   content.ts           # 内容脚本：注册所有翻译触发器、挂载页面功能
   main/
     dom.ts             # 节点抓取核心：grabNode / grabAllNode，块级/内联/跳过判定
@@ -40,7 +39,6 @@ entrypoints/
   utils/               # config / option / model / template / cache / 队列等
 components/            # Preact 组件：Main、CustomHotkeyInput 等
 styles/ + entrypoints/style.css   # 主题变量与译文样式
-docs/                  # Markdown 用户文档（非源码），由 scripts/build-docs.mjs 输出静态 HTML
 ```
 
 ## 核心架构
@@ -77,6 +75,6 @@ docs/                  # Markdown 用户文档（非源码），由 scripts/buil
 
 ## 注意事项
 
-- 本项目暂无官网；README 和仓库内 `docs/` 是当前文档来源。
-- Firefox 有 CORS 限制，微软翻译等需经 `background.ts` 转发（见 `translateWithMicrosoftInBackground`）。
+- 本项目暂无官网；README 是当前文档入口。
+- 微软翻译等跨域请求需经 `background.ts` 转发（见 `translateWithMicrosoftInBackground`）。
 - 修改 `manifest`（权限等）在 `wxt.config.ts`，不要手写 manifest.json。

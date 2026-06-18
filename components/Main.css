@@ -2,16 +2,22 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   text-align: left;
+  background: var(--bt-card-bg);
+  border: 1px solid var(--bt-border-color);
+  border-radius: var(--bt-radius-md);
+  box-shadow: var(--bt-shadow-card);
+  padding: 14px 14px 6px;
 }
 
 .bt-toast {
   position: sticky;
   top: 0;
   z-index: 20;
+  margin-bottom: 12px;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--bt-radius-sm);
   font-size: 13px;
   text-align: center;
   border: 1px solid transparent;
@@ -37,14 +43,15 @@
 
 .bt-setting-row {
   display: grid;
-  grid-template-columns: minmax(128px, 42%) minmax(0, 1fr);
+  grid-template-columns: minmax(116px, 40%) minmax(0, 1fr);
   gap: 10px;
   align-items: center;
-  margin: 0 1em 10px;
+  margin: 0 0 12px;
 }
 
 .bt-setting-row.wide {
   grid-template-columns: 1fr;
+  margin-bottom: 14px;
 }
 
 .bt-setting-label {
@@ -53,24 +60,25 @@
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
-  color: var(--bt-text-color);
-  background: var(--bt-bg-color);
+  color: var(--bt-text-color-primary);
   border-radius: 5px;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .bt-help-icon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background: rgba(64, 158, 255, 0.12);
   color: var(--bt-color-primary);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
+  cursor: help;
 }
 
 .bt-setting-control {
@@ -85,14 +93,31 @@
   border: 1px solid var(--bt-border-color);
   background: var(--bt-bg-color);
   color: var(--bt-text-color);
-  border-radius: 6px;
+  border-radius: var(--bt-radius-sm);
   font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .bt-select,
 .bt-input {
-  min-height: 34px;
+  min-height: 36px;
   padding: 5px 9px;
+}
+
+.bt-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23909399' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+.bt-select:hover,
+.bt-input:hover {
+  border-color: var(--bt-text-color-placeholder);
 }
 
 .bt-textarea {
@@ -156,7 +181,7 @@
 }
 
 .bt-empty-state {
-  margin: 24px 1em;
+  margin: 24px 0;
   padding: 28px 12px;
   border: 1px dashed var(--bt-border-color);
   border-radius: 8px;
@@ -224,23 +249,46 @@
 }
 
 .bt-advanced-panel {
-  margin: 2px 1em 10px;
+  margin: 2px 0 4px;
   border-top: 1px solid var(--bt-border-color);
-  border-bottom: 1px solid var(--bt-border-color);
-  padding: 8px 0;
+  padding: 10px 0 2px;
 }
 
 .bt-advanced-panel > summary {
   cursor: pointer;
   font-weight: 600;
-  padding: 6px 0 12px;
+  font-size: 14px;
+  padding: 4px 0 14px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.bt-advanced-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.bt-advanced-panel > summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.15s ease;
+}
+
+.bt-advanced-panel[open] > summary::before {
+  transform: rotate(90deg);
 }
 
 .bt-row-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin: 0 1em 10px;
+  margin: 0 0 12px;
 }
 
 .bt-divider {
@@ -248,7 +296,7 @@
   align-items: center;
   gap: 12px;
   color: var(--bt-text-color-regular);
-  margin: 16px 1em 12px;
+  margin: 16px 0 12px;
   font-size: 13px;
 }
 
@@ -264,7 +312,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin: 0 1em 10px;
+  margin: 0 0 12px;
 }
 
 .bt-import-box {
@@ -279,11 +327,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ddd;
+  background: var(--bt-border-color);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5f5f5;
+  background: transparent;
   border-radius: 3px;
 }

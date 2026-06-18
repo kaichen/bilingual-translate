@@ -1,11 +1,15 @@
 .bt-popup-shell {
-  min-width: 340px;
+  min-width: 360px;
   color: var(--bt-text-color);
-  background: var(--bt-bg-color);
+  background: var(--bt-page-bg);
 }
 
 .bt-popup-padding {
-  padding: 12px 16px;
+  padding: 16px 16px;
+}
+
+.bt-popup-padding + .bt-popup-padding {
+  padding-top: 0;
 }
 
 .bt-popup-main {
@@ -14,15 +18,21 @@
 }
 
 .bt-popup-title {
-  font-size: 1.75em;
-  margin: 0.5em 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  font-size: 1.4em;
+  margin: 2px 0;
+  letter-spacing: -0.01em;
   color: var(--bt-text-color-primary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .bt-popup-version {
-  font-size: 0.5em;
-  opacity: 0.8;
+  font-size: 0.62em;
+  font-weight: 500;
+  color: var(--bt-text-color-placeholder);
 }
 
 .bt-footer-size {
@@ -30,19 +40,23 @@
 }
 
 .bt-footer-container {
-  background: var(--bt-bg-color);
-  margin: -16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--bt-border-color);
 }
 
 .bt-translation-count {
   margin: 0;
-  font-size: 1.2em;
+  font-size: 1.15em;
   color: var(--bt-text-color-regular);
   text-align: center;
 }
 
 .bt-count-number {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.1em;
   margin: 0 3px;
   color: var(--bt-color-success);
@@ -50,14 +64,13 @@
 
 .bt-footer-links {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 0 16px;
 }
 
 .bt-action-link {
-  font-size: 1.2em;
-  transition: all 0.2s ease;
+  font-size: 1.05em;
+  transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -66,11 +79,12 @@
   background: transparent;
   color: var(--bt-color-primary);
   cursor: pointer;
-  padding: 3px 0;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 .bt-action-link:hover {
-  opacity: 0.8;
+  background: rgba(64, 158, 255, 0.1);
 }
 
 .bt-action-link:active {
@@ -287,33 +301,73 @@
   border: 1px solid var(--bt-border-color);
   background: var(--bt-bg-color);
   color: var(--bt-text-color);
-  border-radius: 6px;
-  min-height: 32px;
-  padding: 6px 12px;
+  border-radius: var(--bt-radius-sm);
+  min-height: 34px;
+  padding: 6px 14px;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
 }
 
 .bt-button:hover {
   background: var(--bt-hover-color);
 }
 
+.bt-button:active {
+  transform: translateY(1px);
+}
+
 .bt-button.primary {
-  border-color: var(--bt-color-primary);
+  border-color: transparent;
   background: var(--bt-color-primary);
   color: white;
 }
 
+.bt-button.primary:hover {
+  background: #66b1ff;
+}
+
 .bt-button.success {
-  border-color: var(--bt-color-success);
+  border-color: transparent;
   background: var(--bt-color-success);
   color: white;
+}
+
+.bt-button.success:hover {
+  background: #85ce61;
 }
 
 .bt-button.text {
   border-color: transparent;
   background: transparent;
   color: var(--bt-color-primary);
+}
+
+.bt-button.text:hover {
+  background: rgba(64, 158, 255, 0.1);
+}
+
+/* 全宽主行动按钮（翻译/移除翻译） */
+.bt-button.bt-full-width {
+  min-height: 44px;
+  border-radius: var(--bt-radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: var(--bt-shadow-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.bt-button.bt-full-width:hover {
+  transform: translateY(-1px);
+}
+
+.bt-button.bt-full-width:active {
+  transform: translateY(0);
 }
 
 .bt-button-small {
@@ -327,8 +381,3 @@
   cursor: not-allowed;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) .bt-footer-container {
-    background: var(--bt-bg-color-darker);
-  }
-}

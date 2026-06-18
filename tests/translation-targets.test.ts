@@ -78,4 +78,14 @@ describe("translation target normalization", () => {
     expect(paragraphTarget && paragraphTarget.kind).toBe("element");
     expect(paragraphTarget && paragraphTarget.kind === "element" ? paragraphTarget.element : null).toBe(paragraph);
   });
+
+  it("keeps non-X long text guarded by the generic length limit", () => {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = `Generic article text. ${"Zero data retention options remain available for careful teams. ".repeat(90)}`.trim();
+    document.body.append(paragraph);
+
+    expect(paragraph.textContent.length).toBeGreaterThan(4096);
+    expect(collectTranslationTargets(document.body)).toEqual([]);
+    expect(grabAllNode(document.body)).toEqual([]);
+  });
 });

@@ -6,7 +6,7 @@ import {CONTEXT_MENU_IDS} from "@/entrypoints/utils/constant";
 let translationStateMap = new Map<number, boolean>(); // tabId -> isTranslated
 
 /**
- * 在background脚本中调用微软翻译API（避免Firefox CORS问题）
+ * 在background脚本中调用微软翻译API（避免content script直接跨域请求限制）
  */
 async function translateWithMicrosoftInBackground(text: string, targetLang: string): Promise<string> {
     try {

@@ -1,11 +1,8 @@
 # bilingual translate
 
-> [English](./misc/README_EN.md) | 中文
-
 一款开源浏览器双语翻译扩展，让所有人都能够拥有母语般的阅读体验。
 
-1. [本地文档](./docs)
-2. [B站视频介绍](https://www.bilibili.com/video/BV1ux4y1e73x/)
+[B站视频介绍](https://www.bilibili.com/video/BV1ux4y1e73x/)
 
 ## 🌟 特性
 
@@ -17,10 +14,6 @@
 - **高度定制**：丰富的自定义选项，满足不同场景需求。
 - **完全免费**：开源免费，非商业化项目。
 
-<kbd><img src="./misc/sample-git-1.gif" alt="sample-git-1.gif" style="width: 80%; max-width: 100%;border: 1px solid black;"></kbd>
-
-<kbd><img src="./misc/sample-git-4.gif" alt="sample-git-4.gif" style="width: 80%; max-width: 100%;border: 1px solid black;"></kbd>
-
 ## 📦 安装
 
 目前尚未发布到浏览器商店，请从源码构建后手动加载扩展：
@@ -31,11 +24,3 @@ pnpm build
 ```
 
 构建产物位于 `.output/chrome-mv3`，可在浏览器扩展管理页面中以开发者模式加载。
-
-## 📖 使用文档
-
-请查看仓库内的 `docs/` 获取详细的：
-- 功能介绍
-- 配置指南
-- 使用教程
-- 常见问题

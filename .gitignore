@@ -14,17 +14,7 @@ dist
 .output
 .wxt
 
-# Docs
-docs/.vitepress/dist
-docs/.vitepress/cache
-docs/.vitepress/.temp
-docs/.vitepress/cache
-docs/.temp
-docs/.cache
-docs/.static
-
 # Development
-web-ext.config.ts
 stats.html
 stats-*.json
 
@@ -61,7 +51,6 @@ Thumbs.db
 *.pem
 *.zip
 *.crx
-*.xpi
 *.bak
 
 # Local env files
@@ -85,7 +74,6 @@ lerna-debug.log*
 stats.html
 stats-*.json
 .wxt
-web-ext.config.ts
 
 # Editor directories and files
 .vscode/*

@@ -640,7 +640,7 @@ function addInputBoxAnimation(element: HTMLElement, animationType: 'translating'
 
 /**
  * 专门用于输入框翻译的微软翻译函数（不使用缓存）
- * 通过background脚本调用，避免Firefox的CORS问题
+ * 通过background脚本调用，避免content script直接跨域请求限制
  */
 async function translateWithMicrosoft(text: string, targetLang: string): Promise<string> {
     try {

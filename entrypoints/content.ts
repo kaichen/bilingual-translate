@@ -7,6 +7,7 @@ import { config, configReady } from "@/entrypoints/utils/config";
 import { cancelAllTranslations, translateText } from "@/entrypoints/utils/translateApi";
 import { mountNewApiComponent } from "@/entrypoints/utils/newApi";
 import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/utils/trigger";
+import { type ContentMessage, type BackgroundMessage } from "@/entrypoints/utils/messages";
 
 export default defineContentScript({
     matches: ['<all_urls>'],  // 匹配所有页面
@@ -23,8 +24,8 @@ export default defineContentScript({
         cache.cleaner();    // 检测是否清理缓存
 
         // background.ts
-        browser.runtime.onMessage.addListener((message: { message: string; }, sender: any, sendResponse: () => void) => {
-            if (message.message !== 'clearCache') return false;
+        browser.runtime.onMessage.addListener((message: ContentMessage, sender: any, sendResponse: () => void) => {
+            if (message.type !== 'clearCache') return false;
 
             cache.clean()
             sendResponse();
@@ -32,7 +33,7 @@ export default defineContentScript({
         });
         
         // 处理右键菜单触发的全文翻译和撤销
-        browser.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (response?: any) => void) => {
+        browser.runtime.onMessage.addListener((message: ContentMessage, sender: any, sendResponse: (response?: any) => void) => {
             if (message.type === 'contextMenuTranslate') {
                 if (message.action === 'fullPage') {
                     // 触发全文翻译
@@ -542,9 +543,9 @@ async function translateWithMicrosoft(text: string, targetLang: string): Promise
         // 发送消息给background脚本进行翻译
         const result = await browser.runtime.sendMessage({
             type: 'inputBoxTranslation',
-            text: text,
-            targetLang: targetLang
-        });
+            text,
+            targetLang,
+        } satisfies BackgroundMessage);
         
         if (result && result.success) {
             return result.translatedText;

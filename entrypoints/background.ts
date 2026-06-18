@@ -1,6 +1,7 @@
 import {_service} from "@/entrypoints/service/_service";
 import {config} from "@/entrypoints/utils/config";
 import {CONTEXT_MENU_IDS} from "@/entrypoints/utils/constant";
+import {type BackgroundMessage, type TranslateRequest} from "@/entrypoints/utils/messages";
 
 // 翻译状态管理
 let translationStateMap = new Map<number, boolean>(); // tabId -> isTranslated
@@ -163,30 +164,30 @@ export default defineBackground({
             translationStateMap.delete(tabId);
         });
 
-        // 处理翻译请求
-        browser.runtime.onMessage.addListener((message: any) => {
+        // 处理消息：带 type 的是指令消息（穷尽 switch），无 type 的是普通翻译请求（交 _service 分发）
+        browser.runtime.onMessage.addListener((message: BackgroundMessage | TranslateRequest) => {
             return new Promise(async (resolve, reject) => {
                 try {
-                    if (message.type === 'getTranslationState') {
-                        resolve({ isTranslated: translationStateMap.get(message.tabId) || false });
+                    if ('type' in message) {
+                        switch (message.type) {
+                            case 'getTranslationState':
+                                resolve({ isTranslated: translationStateMap.get(message.tabId) || false });
+                                return;
+                            case 'setTranslationState':
+                                translationStateMap.set(message.tabId, Boolean(message.isTranslated));
+                                if (isContextMenuSupported) updateContextMenus(message.tabId);
+                                resolve({ success: true });
+                                return;
+                            case 'inputBoxTranslation': {
+                                const translatedText = await translateWithMicrosoftInBackground(message.text, message.targetLang);
+                                resolve({ success: true, translatedText });
+                                return;
+                            }
+                        }
                         return;
                     }
 
-                    if (message.type === 'setTranslationState') {
-                        translationStateMap.set(message.tabId, Boolean(message.isTranslated));
-                        if (isContextMenuSupported) updateContextMenus(message.tabId);
-                        resolve({ success: true });
-                        return;
-                    }
-
-                    // 处理输入框翻译请求
-                    if (message.type === 'inputBoxTranslation') {
-                        const translatedText = await translateWithMicrosoftInBackground(message.text, message.targetLang);
-                        resolve({ success: true, translatedText });
-                        return;
-                    }
-
-                    // 处理普通翻译请求
+                    // 无 type：普通翻译请求，交 _service 分发
                     _service[config.service](message)
                         .then(resp => resolve(resp))    // 成功
                         .catch(error => reject(error)); // 失败

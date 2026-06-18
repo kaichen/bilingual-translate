@@ -1,0 +1,38 @@
+// content / background / popup 之间的消息契约（可辨识联合，type 为判别字段）。
+// 不含 offscreen 的 CHROME_TRANSLATE_OFFSCREEN —— 它走独立的 chrome.runtime 通道，与主消息总线无关。
+// 纯类型模块：无运行时代码，价值在编译期对齐收发两端。
+
+// —— 发往 background 的指令消息 ——
+export type BackgroundMessage =
+    | { type: 'getTranslationState'; tabId: number }
+    | { type: 'setTranslationState'; tabId: number; isTranslated: boolean }
+    | { type: 'inputBoxTranslation'; text: string; targetLang: string };
+
+// —— 发往 content 的指令消息 ——
+export type ContentMessage =
+    | { type: 'contextMenuTranslate'; action: 'fullPage' | 'restore' }
+    | { type: 'clearCache' };
+
+export type ExtMessage = BackgroundMessage | ContentMessage;
+
+// 无 type 的普通翻译请求（content → background 默认分支，经 _service 分发）
+export interface TranslateRequest {
+    context: string;
+    origin: string;
+}
+
+// —— 响应 ——
+export interface TranslationStateResponse {
+    isTranslated?: boolean;
+}
+
+export interface ContextMenuTranslateResponse {
+    status?: string;
+    action?: string;
+}
+
+export interface InputBoxTranslationResponse {
+    success: boolean;
+    translatedText?: string;
+    error?: string;
+}

@@ -1,4 +1,4 @@
-import {_service} from "@/entrypoints/service/_service";
+import {_service} from "@/entrypoints/providers/service";
 import {config} from "@/entrypoints/utils/config";
 import {CONTEXT_MENU_IDS} from "@/entrypoints/utils/constant";
 import {type BackgroundMessage, type TranslateRequest} from "@/entrypoints/utils/messages";

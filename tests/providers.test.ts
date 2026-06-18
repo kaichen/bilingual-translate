@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROVIDERS, servicesType, urls, models, type Need } from "../entrypoints/utils/providers";
+import { PROVIDERS, servicesType, urls, models, type Need } from "@/entrypoints/providers/registry";
 import { options, services } from "../entrypoints/utils/option";
 
 // 黄金快照：迁移前 option.ts / constant.ts 里手维护的值，逐项锁定，防派生回归。

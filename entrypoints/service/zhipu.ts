@@ -1,4 +1,4 @@
-import {urls} from "../utils/providers";
+import {urls} from "@/entrypoints/providers/registry";
 import {services} from "../utils/option";
 import {commonMsgTemplate} from "../utils/template";
 import CryptoJS from 'crypto-js';

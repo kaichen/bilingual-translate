@@ -1,5 +1,5 @@
 import {method} from "../utils/constant";
-import {urls} from "../utils/providers";
+import {urls} from "@/entrypoints/providers/registry";
 import {services} from "../utils/option";
 import {config} from "@/entrypoints/utils/config";
 

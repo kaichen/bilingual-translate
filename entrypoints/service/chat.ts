@@ -2,7 +2,7 @@
 // per-provider 变化点收敛为两段生命周期钩子 onRequest / onResponse，全缺省即 OpenAI 兼容。
 // 详见 CONTEXT.md。本模块是 dispatch 脏层（import config），不追求单测。
 import { method } from "../utils/constant";
-import { urls } from "../utils/providers";
+import { urls } from "@/entrypoints/providers/registry";
 import { customModelString, services } from "../utils/option";
 import { config } from "@/entrypoints/utils/config";
 import { contentPostHandler } from "@/entrypoints/utils/check";

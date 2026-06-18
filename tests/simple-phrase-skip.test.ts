@@ -51,4 +51,41 @@ describe("simple phrase translation skip rule", () => {
       expect(grabAllNode(document.body)).toEqual([paragraph]);
     });
   });
+
+  it("skips content without linguistic letters", () => {
+    const phrases = [
+      "123",
+      "1/2",
+      "2026-06-18",
+      "$123.45",
+      "#123",
+      "+1 (555) 123-4567",
+      "!!!",
+      "😂😂😂",
+      "❤️🔥",
+    ];
+
+    phrases.forEach(text => {
+      const paragraph = renderParagraph(text);
+
+      expect(grabNode(paragraph)).toBe(false);
+      expect(grabAllNode(document.body)).toEqual([]);
+    });
+  });
+
+  it("keeps text that mixes letters with numbers, symbols, or emoji", () => {
+    const phrases = [
+      "Version 1/2 is ready.",
+      "C++ is still used in low-latency systems.",
+      "This costs $5 today.",
+      "Launch is ready 🔥",
+    ];
+
+    phrases.forEach(text => {
+      const paragraph = renderParagraph(text);
+
+      expect(grabNode(paragraph)).toBe(paragraph);
+      expect(grabAllNode(document.body)).toEqual([paragraph]);
+    });
+  });
 });

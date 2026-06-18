@@ -2,41 +2,37 @@ import {services} from "../utils/option";
 import {yiyanMsgTemplate} from "../utils/template";
 import {method} from "../utils/constant";
 import {config} from "@/entrypoints/utils/config";
-
-// 文心一言 OAuth 取 token 的私有 endpoint（非翻译 endpoint，故不进 Provider 注册表）
-const YIYAN_TOKEN_URL = "https://aip.baidubce.com/oauth/2.0/token";
+import {chatCompletion} from "./chat";
 
 // ERNIE-Bot 4.0 模型，模型定价页面：https://console.bce.baidu.com/qianfan/chargemanage/list
 // api 文档中心：https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t
 
-// 文心一言根据 ak, sk 获取 secret 和 expiration
+// 文心一言 OAuth 取 token 的私有 endpoint（非翻译 endpoint，故不进 Provider 注册表）
+const YIYAN_TOKEN_URL = "https://aip.baidubce.com/oauth/2.0/token";
+
+// 文心一言根据 ak, sk 取 access_token，token 拼进 URL。透传给共享 chatCompletion adapter。
 async function yiyan(message: any) {
+    return chatCompletion({
+        onRequest: async () => {
+            let model = config.model[services.yiyan]
+            // model 参数转换
+            if (model === "ERNIE-Bot 4.0") model = "completions_pro"
+            else if (model === "ERNIE-Bot") model = "completions"
+            else if (model === "ERNIE-Speed-8K") model = "ernie_speed"
+            else if (model === "ERNIE-Speed-128K") model = "ernie-speed-128k"
 
-    let model = config.model[services.yiyan]
-    // model 参数转换
-    if (model === "ERNIE-Bot 4.0") model = "completions_pro"
-    else if (model === "ERNIE-Bot") model = "completions"
-    else if (model === "ERNIE-Speed-8K") model = "ernie_speed"
-    else if (model === "ERNIE-Speed-128K") model = "ernie-speed-128k"
-
-    const secret = await getSecret();
-    const url = `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/${model}?access_token=${secret}`;
-
-    // 发起 fetch 请求
-    const resp = await fetch(url, {
-        method: method.POST,
-        headers: {'Content-Type': 'application/json'},
-        body: yiyanMsgTemplate(message.origin)
-    });
-
-    if (resp.ok) {
-        let result = await resp.json();
-        if (result.error_code) throw new Error(`翻译失败: ${result.error_code} ${result.error_msg}`)
-        return result.result
-    } else {
-        console.log(resp)
-        throw new Error(`翻译失败: ${resp.status} ${resp.statusText} body: ${await resp.text()}`);
-    }
+            const secret = await getSecret();
+            return {
+                url: `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/${model}?access_token=${secret}`,
+                headers: {'Content-Type': 'application/json'},
+                body: yiyanMsgTemplate(message.origin),
+            };
+        },
+        onResponse: (result) => {
+            if (result.error_code) throw new Error(`翻译失败: ${result.error_code} ${result.error_msg}`)
+            return result.result
+        },
+    }, message);
 }
 
 async function getSecret() {

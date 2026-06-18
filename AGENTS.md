@@ -68,8 +68,8 @@ styles/ + entrypoints/style.css   # 主题变量与译文样式
 
 1. `utils/providers.ts`：在 `PROVIDERS` 加一条记录 —— `name`（用 `services` 里的键）、`kind`（machine/ai）、`url?`（静态翻译 endpoint，动态拼接/无 fetch 的留空）、`models?`、`needs`（能力词表：token/model/proxy/customUrl/aksk/youdaoKey/tencentSecret/azureEndpoint/robotId/newApiUrl）。`servicesType`/`urls`/`models` 由此自动派生。
 2. `utils/option.ts`：在 `services` 加键；在 `options.services` 加下拉项（展示顺序/分组/label 手写）。
-3. `entrypoints/service/<name>.ts`：实现 `async function(message) => string`，OpenAI 兼容的可直接复用 `service/common.ts`。
-4. `service/_service.ts`：在分发表注册。
+3. AI 大模型服务：在 `service/chat.ts` 的 `chatServices` 加一项 —— 缺省即 OpenAI 兼容，差异用 `onRequest`/`onResponse` 钩子表达（见 `CONTEXT.md` 的 chat-completion adapter）。带重辅助逻辑（自定义签名/OAuth）或机器翻译风格的，才新建独立 `service/<name>.ts` 实现 `async function(message) => string`。
+4. `service/_service.ts`：独立文件需在分发表注册（`chatServices` 已自动并入）。
 5. 如需特殊请求体，在 `utils/template.ts` 加模板。
 6. `pnpm test`（`providers.test.ts` 校验下拉↔注册表一致、needs 合法）+ `pnpm compile` 验证。
 

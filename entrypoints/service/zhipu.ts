@@ -1,44 +1,32 @@
-import {method} from "../utils/constant";
 import {urls} from "../utils/providers";
 import {services} from "../utils/option";
 import {commonMsgTemplate} from "../utils/template";
 import CryptoJS from 'crypto-js';
 import {config} from "@/entrypoints/utils/config";
-
+import {chatCompletion} from "./chat";
 
 // 文档参考：https://open.bigmodel.cn/dev/api#nosdk
+// 智谱用 API Key 生成 JWT 作为 Bearer，并缓存到 config.extra。透传给共享 chatCompletion adapter。
 async function zhipu(message: any) {
-    // 智谱根据 token 获取 secret（签名密钥） 和 expiration
-    let token = config.token[services.zhipu];
+    return chatCompletion({
+        onRequest: async () => ({
+            url: urls[services.zhipu],
+            headers: {'Content-Type': 'application/json', Authorization: `Bearer ${await getSecret()}`},
+            body: commonMsgTemplate(message.origin),
+        }),
+    }, message);
+}
+
+async function getSecret(): Promise<string> {
     let secret, expiration;
     config.extra[services.zhipu] && ({secret, expiration} = config.extra[services.zhipu]);
     if (!secret || expiration <= Date.now()) {
-        secret = generateToken(token);
+        secret = generateToken(config.token[services.zhipu]);
         if (!secret) throw new Error('无法生成令牌');
-        // 保存 secret 和 expiration
         config.extra[services.zhipu] = {secret, expiration: Date.now() + 3600000 * 24};
         await storage.setItem('local:config', JSON.stringify(config));
     }
-
-    // 构建请求头
-    let headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    headers.append('Authorization', `Bearer ${secret}`);
-
-    // 发起 fetch 请求
-    const resp = await fetch(urls[services.zhipu], {
-        method: method.POST,
-        headers: headers,
-        body: commonMsgTemplate(message.origin)
-    });
-
-    if (resp.ok) {
-        let result = await resp.json();
-        return result.choices[0].message.content;
-    } else {
-        console.log(resp)
-        throw new Error(`翻译失败: ${resp.status} ${resp.statusText} body: ${await resp.text()}`);
-    }
+    return secret;
 }
 
 function generateToken(APIKey: string) {

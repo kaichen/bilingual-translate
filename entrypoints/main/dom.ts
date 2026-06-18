@@ -368,6 +368,7 @@ function shouldSkipText(text: string): boolean {
     const normalizedText = text.trim();
     return normalizedText.length < MIN_TRANSLATABLE_TEXT_LENGTH ||
         normalizedText.length > MAX_TRANSLATABLE_TEXT_LENGTH ||
+        isNonLinguisticText(normalizedText) ||
         isNumericContent(normalizedText) ||
         isUserIdentifier(normalizedText) ||
         isSimplePhraseText(normalizedText);
@@ -454,6 +455,7 @@ function shouldSkipNode(node: any, tag: string): boolean {
         node.classList?.contains('notranslate') ||
         node.isContentEditable ||
         checkTextSize(node) ||
+        isNonLinguisticContent(node) ||
         isSimplePhraseContent(node) ||
         isMainlyNumericContent(node);
 }
@@ -502,6 +504,17 @@ function isSimplePhraseContent(node: any): boolean {
     if (!node?.textContent) return false;
 
     return isSimplePhraseText(node.textContent);
+}
+
+function isNonLinguisticText(text: string): boolean {
+    const normalizedText = text.normalize('NFKC').replace(/\s+/g, '');
+    return normalizedText.length > 0 && !/\p{L}/u.test(normalizedText);
+}
+
+function isNonLinguisticContent(node: any): boolean {
+    if (!node?.textContent) return false;
+
+    return isNonLinguisticText(node.textContent);
 }
 
 function isInTranslationUi(node: any): boolean {

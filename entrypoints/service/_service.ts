@@ -2,25 +2,15 @@ import {services} from "../utils/option";
 import microsoft from "./microsoft";
 import deepl from "./deepl";
 import deeplx from "./deeplx";
-import custom from "./custom";
-import tongyi from "./tongyi";
 import zhipu from "./zhipu";
 import yiyan from "./yiyan";
-import gemini from "./gemini";
 import google from "./google";
 import xiaoniu from "./xiaoniu";
 import youdao from "./youdao";
 import tencent from "./tencent";
-import claude from "./claude";
-import infini from "@/entrypoints/service/infini";
-import minimax from "@/entrypoints/service/minimax";
-import common from "@/entrypoints/service/common";
-import coze from "@/entrypoints/service/coze";
-import deepseek from "./deepseek";
-import newapi from "./newapi";
-import azureOpenai from "./azure-openai";
 import chromeTranslator from "./chrome-translator";
 import hunyuanTranslation from "./hunyuan-translation";
+import {chatServices} from "./chat";
 
 type ServiceFunction = (message: any) => Promise<any>;
 type ServiceMap = {[key: string]: ServiceFunction;};
@@ -36,31 +26,12 @@ export const _service: ServiceMap = {
     [services.tencent]: tencent,
     [services.chromeTranslator]: chromeTranslator,
 
-    // 大模型翻译
-    [services.custom]: custom,
-    [services.tongyi]: tongyi,
+    // AI 大模型：带重辅助逻辑、独立文件，复用 chatCompletion adapter
     [services.zhipu]: zhipu,
     [services.yiyan]: yiyan,
-    [services.gemini]: gemini,
-    [services.claude]: claude,
-    [services.infini]: infini,
-    [services.minimax]: minimax,
-    [services.cozecom]: coze,
-    [services.cozecn]: coze,
-    [services.deepseek]: deepseek,
-    [services.newapi]: newapi,
-    // openai schema
-    [services.openai]: common,
-    [services.azureOpenai]: azureOpenai,
-    [services.moonshot]: common,
-    [services.baichuan]: common,
-    [services.lingyi]: common,
-    [services.jieyue]: common,
-    [services.groq]: common,
-    [services.huanYuan]: common,
+    // 腾讯云签名风格，非 chat completion
     [services.huanYuanTranslation]: hunyuanTranslation,
-    [services.doubao]: common,
-    [services.siliconCloud]: common,
-    [services.openrouter]: common,
-    [services.grok]: common,
+
+    // 其余 AI 大模型：经 chatCompletion adapter 统一分发
+    ...chatServices,
 }

@@ -7,7 +7,7 @@ import { enqueueTranslation, clearTranslationQueue, configureQueue } from './tra
 import browser from 'webextension-polyfill';
 import { config } from './config';
 import { cache } from './cache';
-import { detectlang } from './common';
+import { shouldSkipTranslation } from './common';
 import { storage } from '@wxt-dev/storage';
 
 // 调试相关
@@ -34,7 +34,7 @@ export async function translateText(origin: string, context: string = document.t
   } = options;
 
   // 如果目标语言与当前文本语言相同，直接返回原文
-  if (detectlang(origin.replace(/[\s\u3000]/g, '')) === config.to) {
+  if (shouldSkipTranslation(origin, config.to)) {
     return origin;
   }
 

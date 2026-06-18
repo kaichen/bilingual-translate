@@ -18,7 +18,7 @@ import {
     type TranslationTarget
 } from "@/entrypoints/main/dom";
 import { detectlang, throttle } from "@/entrypoints/utils/common";
-import { getMainDomain, replaceCompatFn } from "@/entrypoints/main/compat";
+import { getMainDomain, getSiteCompatRule } from "@/entrypoints/main/compat";
 import { config } from "@/entrypoints/utils/config";
 import { translateText, cancelAllTranslations } from '@/entrypoints/utils/translateApi';
 
@@ -651,8 +651,8 @@ export function handleSingleTranslation(node: any, slide: boolean) {
             spinner.remove();
             htmlSet.delete(nodeOuterHTML);
 
-            // 兼容部分网站独特的 DOM 结构
-            let fn = replaceCompatFn[getMainDomain(document.location.hostname)];
+            // 兼容部分网站独特的 DOM 结构（译文回填逃生舱，原 replaceCompatFn）
+            let fn = getSiteCompatRule()?.replace;
             if (fn) fn(node, outerHTMLCache);
             else node.outerHTML = outerHTMLCache;
 

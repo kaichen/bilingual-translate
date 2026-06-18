@@ -2,9 +2,6 @@
 
 import {findMatchingElement} from "@/entrypoints/utils/common";
 
-type ReplaceFunction = (node: any, text: any) => any;
-type SelectFunction = (node: any) => any | {skip: boolean} | false;
-
 const parser = new DOMParser();
 
 // 调试相关
@@ -54,25 +51,28 @@ function debugLog(type: string, message: string, ...args: any[]): void {
   }
 }
 
-interface ReplaceCompatFn {
-    [domain: string]: ReplaceFunction;
-}
-
-interface SelectCompatFn {
-    [domain: string]: SelectFunction;
-}
-
 export interface SiteCompatRule {
     pattern: string;
-    selector?: string;
+    // 按序匹配：每项可为逗号串（任一最近祖先），项间按优先级先到先得。
+    // 统一吸收旧 selector 逗号串与旧 selectCompatFn 的 findMatchingElement 链。
+    selector?: string | string[];
     segmentSelector?: string;
     rootsSelector?: string;
     ignoreSelector?: string;
     autoScan?: boolean;
-    preferRule?: boolean;
+    // 命令式跳过逃生舱：select 表达不了的启发式跳过（原 shouldSkip*）。仅在 selectSiteRuleNode 单节点路径生效。
+    skipNode?: (node: any) => boolean;
+    // 译文回填逃生舱：需要保留原节点结构时的自定义写回（原 replaceCompatFn）。
+    replace?: (node: any, text: any) => void;
     selectStyle?: string;
     parentStyle?: string;
     grandStyle?: string;
+}
+
+// selector 归一为字符串数组：string → [string]，数组原样，空值 → []
+function selectorList(selector?: string | string[]): string[] {
+    if (Array.isArray(selector)) return selector.filter(s => s?.trim());
+    return selector?.trim() ? [selector] : [];
 }
 
 const DEFAULT_SELECT_STYLE = "-webkit-line-clamp: unset; max-height: none; height: auto;";
@@ -93,13 +93,6 @@ const REDDIT_CONTENT_SELECTOR = [
     ".thing.link a.title",
 ].join(", ");
 
-const REDDIT_SEGMENT_SELECTOR = [
-    "h1",
-    "[slot='title']",
-    "h3[data-click-id='body']",
-    "p",
-    "a.title",
-].join(", ");
 
 const REDDIT_IGNORE_SELECTOR = [
     "header",
@@ -133,6 +126,8 @@ const REDDIT_IGNORE_SELECTOR = [
     "[data-before-content='advertisement']",
 ].join(", ");
 
+// 站点规则注册表（单一真相源）。selector 为数组时：首项是全局批量扫描选择器，
+// 整个数组是 hover 单节点上卷链（按序优先）。命令式跳过走 skipNode，译文回填走 replace。
 export const siteCompatRules: SiteCompatRule[] = [
     {
         pattern: "en.wikipedia.org",
@@ -140,9 +135,16 @@ export const siteCompatRules: SiteCompatRule[] = [
     },
     {
         pattern: "news.ycombinator.com",
-        selector: "p, .titleline, .commtext, .hn-item-title, .hn-comment-text, .hn-story-title",
+        selector: [
+            "p, .titleline, .commtext, .hn-item-title, .hn-comment-text, .hn-story-title",
+            "td.title a.titlelink",
+            "div.comment span.commtext",
+            "div.toptext",
+            "td.default",
+        ],
         ignoreSelector: "button, code, footer, form, header, mark, nav, pre, .reply",
         autoScan: false,
+        skipNode: shouldSkipHNElement,
     },
     {
         pattern: "twitter.com, x.com",
@@ -150,13 +152,15 @@ export const siteCompatRules: SiteCompatRule[] = [
         ignoreSelector: "header, nav, [role='button'], [data-testid='videoPlayer'], [data-testid^='tweetTextarea'], [data-testid='sidebarColumn'], [data-testid='tweetTextarea_0'], [data-testid='User-Name'], [data-testid='UserName'], [data-testid='reply'], [data-testid='retweet'], [data-testid='like'], [data-testid='bookmark'], [data-testid='share'], [data-testid='caret'], [data-testid='app-bar-close'], [aria-label='Timeline: Trending now'], [aria-label='Who to follow']",
         autoScan: false,
         selectStyle: DEFAULT_SELECT_STYLE,
+        skipNode: shouldSkipTwitterElement,
     },
     {
+        // reddit 现状走 querySiteRuleNodes 数据路径（原 preferRule 短路了 selectCompatFn），
+        // 故迁移后不挂 skipNode，行为等价；shouldSkipRedditElement 随 selectCompatFn 删除。
         pattern: "reddit.com",
         selector: REDDIT_CONTENT_SELECTOR,
         ignoreSelector: REDDIT_IGNORE_SELECTOR,
         autoScan: false,
-        preferRule: true,
     },
     {
         pattern: "www.youtube.com/live_chat",
@@ -167,10 +171,23 @@ export const siteCompatRules: SiteCompatRule[] = [
     {
         pattern: "youtube.com",
         rootsSelector: "ytd-page-manager",
+        selector: [
+            "h1.title",
+            "div#description-inline-expander",
+            "yt-formatted-string#content-text",
+            "div#description",
+            "yt-formatted-string.ytd-playlist-panel-renderer",
+            "yt-formatted-string.ytd-compact-video-renderer",
+            "ytd-backstage-post-renderer div#content",
+            "span.captions-text",
+            "yt-formatted-string",
+        ],
         ignoreSelector: "aside, button, footer, form, header, pre, mark, nav, #player, #container, .caption-window, .ytp-settings-menu, #kiss-youtube-subtitle-list-container",
         selectStyle: DEFAULT_SELECT_STYLE,
         parentStyle: DEFAULT_SELECT_STYLE,
         grandStyle: DEFAULT_SELECT_STYLE,
+        skipNode: shouldSkipYouTubeElement,
+        replace: youtubeReplace,
     },
     {
         pattern: "web.telegram.org",
@@ -180,9 +197,61 @@ export const siteCompatRules: SiteCompatRule[] = [
     },
     {
         pattern: "github.com",
-        selector: "h1, h2, h3, h4, h5, h6, .markdown-body li, p, dd, blockquote, figcaption, label, legend, .user-profile-bio>div, [data-testid=\"results-list\"] .search-match, .Subhead-description, [class^=\"prc-SelectPanel-Subtitle-\"], [class^=\"prc-ActionList-ItemLabel-\"], [role=\"dialog\"] .overflow-auto, .h4, .repos-list-description, .discussion-title, [class*=\"PinnedIssue-module__Link\"] span, .js-wiki-sidebar-page-container :is(.Truncate-text, .Link--primary)",
+        selector: [
+            "h1, h2, h3, h4, h5, h6, .markdown-body li, p, dd, blockquote, figcaption, label, legend, .user-profile-bio>div, [data-testid=\"results-list\"] .search-match, .Subhead-description, [class^=\"prc-SelectPanel-Subtitle-\"], [class^=\"prc-ActionList-ItemLabel-\"], [role=\"dialog\"] .overflow-auto, .h4, .repos-list-description, .discussion-title, [class*=\"PinnedIssue-module__Link\"] span, .js-wiki-sidebar-page-container :is(.Truncate-text, .Link--primary)",
+            "div.comment-body",
+            "div.comment-body td.comment-body",
+            "div.js-issue-title",
+            "div.pull-request-review-comment",
+            "p.f4.my-3",
+            "div.commit-desc pre",
+            "div.BorderGrid-cell > p",
+            "div.merge-status-item span.status-meta",
+            "div.f6.color-fg-muted.mt-2",
+            "div.p-note.user-profile-bio",
+            "p.pinned-item-desc",
+            "div.js-log-container pre",
+        ],
         ignoreSelector: "button, p.pinned-item-desc+p",
         autoScan: false,
+        skipNode: shouldSkipGitHubElement,
+    },
+    {
+        pattern: "mvnrepository.com",
+        selector: "div.im-description",
+    },
+    {
+        pattern: "aozora.gr.jp",
+        selector: "div.main_text",
+    },
+    {
+        pattern: "webtrees.net",
+        selector: "div.kmsg",
+    },
+    {
+        pattern: "stackoverflow.com",
+        selector: [
+            "h1.question-hyperlink",
+            "div.excerpt",
+            "div.question-status",
+            "div.profile-about",
+            "div.s-notice",
+        ],
+        skipNode: shouldSkipStackOverflowElement,
+    },
+    {
+        pattern: "medium.com",
+        selector: [
+            "h1",
+            "h2",
+            "p",
+            "li",
+            "blockquote",
+            "article section",
+            "p.pw-author-note",
+            "div.pw-responses-thread p",
+        ],
+        skipNode: shouldSkipMediumElement,
     },
 ];
 
@@ -315,8 +384,9 @@ export function isWithinSiteRuleRoots(node: Element, rule: SiteCompatRule | unde
 }
 
 function isWithinSiteRuleSelector(node: Element, rule: SiteCompatRule): boolean {
-    if (!rule.selector?.trim()) return true;
-    return safeMatches(node, rule.selector) || Boolean(safeClosest(node, rule.selector));
+    const selector = selectorList(rule.selector)[0];   // 全局选择器（数组首项）
+    if (!selector) return true;
+    return safeMatches(node, selector) || Boolean(safeClosest(node, selector));
 }
 
 function getSiteRuleSegments(node: Element, rule: SiteCompatRule): Element[] {
@@ -349,7 +419,10 @@ function addSiteRuleNode(nodes: Set<Element>, node: Element, rule: SiteCompatRul
 }
 
 export function querySiteRuleNodes(rootNode: Node, rule: SiteCompatRule | undefined = getSiteCompatRule()): Element[] {
-    if (!rule?.selector?.trim()) return [];
+    if (!rule) return [];
+    // 全局批量扫描只用首项选择器；多项数组的其余项是 hover 单节点上卷链，不在此泄漏
+    const selector = selectorList(rule.selector)[0];
+    if (!selector) return [];
 
     const nodes = new Set<Element>();
 
@@ -364,11 +437,11 @@ export function querySiteRuleNodes(rootNode: Node, rule: SiteCompatRule | undefi
             nodes.add(applySiteRuleStyles(root, rule));
         }
 
-        if (safeMatches(root, rule.selector) && !isIgnoredBySiteRule(root, rule)) {
+        if (safeMatches(root, selector) && !isIgnoredBySiteRule(root, rule)) {
             addSiteRuleNode(nodes, root, rule);
         }
 
-        safeQuerySelectorAll(root, rule.selector).forEach(node => {
+        safeQuerySelectorAll(root, selector).forEach(node => {
             if (!isIgnoredBySiteRule(node, rule)) {
                 addSiteRuleNode(nodes, node, rule);
             }
@@ -381,11 +454,15 @@ export function querySiteRuleNodes(rootNode: Node, rule: SiteCompatRule | undefi
 export function selectSiteRuleNode(node: Element, rule: SiteCompatRule | undefined = getSiteCompatRule()): Element | {skip: boolean} | false {
     if (!rule) return false;
 
+    // 命令式跳过逃生舱（原 selectCompatFn 内联的 shouldSkip*），仅此单节点路径生效
+    if (rule.skipNode?.(node)) return {skip: true};
+
     if (!isWithinSiteRuleRoots(node, rule) || isIgnoredBySiteRule(node, rule)) {
         return {skip: true};
     }
 
-    if (!rule.selector?.trim()) return false;
+    const selectors = selectorList(rule.selector);
+    if (!selectors.length) return false;
 
     if (rule.segmentSelector?.trim()) {
         const segment = safeMatches(node, rule.segmentSelector) ? node : safeClosest(node, rule.segmentSelector);
@@ -400,14 +477,15 @@ export function selectSiteRuleNode(node: Element, rule: SiteCompatRule | undefin
         }
     }
 
-    if (safeMatches(node, rule.selector)) {
-        if (getSiteRuleSegments(node, rule).length) return false;
-        return applySiteRuleStyles(node, rule);
+    // 按序优先：每项可为逗号串（任一最近祖先），首个命中即返回（吸收原 findMatchingElement 链）
+    for (const selector of selectors) {
+        const matched = safeMatches(node, selector) ? node : safeClosest(node, selector);
+        if (!matched) continue;
+        if (getSiteRuleSegments(matched, rule).length) return false;
+        return applySiteRuleStyles(matched, rule);
     }
 
-    const matched = safeClosest(node, rule.selector);
-    if (matched && getSiteRuleSegments(matched, rule).length) return false;
-    return matched ? applySiteRuleStyles(matched, rule) : false;
+    return false;
 }
 
 // 根据浏览器 url.host 是获取获取主域名
@@ -506,359 +584,43 @@ function isSpecialContent(text: string): boolean {
     return false;
 }
 
-// 文本替换环节的兼容函数，主域名 : 兼容函数
-export const replaceCompatFn: ReplaceCompatFn = {
-    ["youtube.com"]: (node: any, text: any) => {
-        // 使用DOMParser解析翻译后的HTML
-        const doc = parser.parseFromString(text, 'text/html');
-        const newNode = doc.body.firstChild as HTMLElement;
-        
-        // 针对YouTube特有的格式化字符串进行特殊处理
-        if (node.tagName.toLowerCase() === 'yt-formatted-string') {
-            // 尝试保留原有的属性和样式
-            if (node.hasAttribute('has-link-only_')) {
-                node.innerHTML = newNode.innerHTML;
+// 译文回填：保留 YouTube yt-formatted-string 的链接/格式结构（原 replaceCompatFn['youtube.com']，挂在 rule.replace）
+function youtubeReplace(node: any, text: any) {
+    // 使用DOMParser解析翻译后的HTML
+    const doc = parser.parseFromString(text, 'text/html');
+    const newNode = doc.body.firstChild as HTMLElement;
+
+    // 针对YouTube特有的格式化字符串进行特殊处理
+    if (node.tagName.toLowerCase() === 'yt-formatted-string') {
+        // 尝试保留原有的属性和样式
+        if (node.hasAttribute('has-link-only_')) {
+            node.innerHTML = newNode.innerHTML;
+            return;
+        }
+
+        // 处理具有特殊格式的内容
+        if (node.querySelector('a') || node.querySelector('span')) {
+            const links = node.querySelectorAll('a');
+            const spans = node.querySelectorAll('span');
+
+            if (links.length > 0 || spans.length > 0) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = newNode.innerHTML;
+
+                node.childNodes.forEach((child: Node) => {
+                    if (child.nodeType === Node.ELEMENT_NODE) {
+                        if (child.nodeName.toLowerCase() === 'a' || child.nodeName.toLowerCase() === 'span') {
+                            (child as HTMLElement).textContent = tempDiv.textContent || '';
+                        }
+                    }
+                });
                 return;
             }
-            
-            // 处理具有特殊格式的内容
-            if (node.querySelector('a') || node.querySelector('span')) {
-                // 尝试保留链接和格式，但更新文本内容
-                const links = node.querySelectorAll('a');
-                const spans = node.querySelectorAll('span');
-                
-                if (links.length > 0 || spans.length > 0) {
-                    // 创建临时元素存储新文本
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = newNode.innerHTML;
-                    
-                    // 保留原有的链接和格式元素
-                    node.childNodes.forEach((child: Node) => {
-                        if (child.nodeType === Node.ELEMENT_NODE) {
-                            // 保留原有的HTML元素
-                            if (child.nodeName.toLowerCase() === 'a' || child.nodeName.toLowerCase() === 'span') {
-                                // 更新元素内容，但保留属性
-                                (child as HTMLElement).textContent = tempDiv.textContent || '';
-                            }
-                        }
-                    });
-                    return;
-                }
-            }
         }
-        
-        // 默认处理：直接替换innerHTML
-        node.innerHTML = newNode.innerHTML;
     }
-};
 
-// 元素 node 选择环节的兼容函数
-export const selectCompatFn: SelectCompatFn = {
-    ["mvnrepository.com"]: (node: any) => {
-        if (node.tagName.toLowerCase() === 'div' && node.classList.contains('im-description')) return node
-    },
-    ["aozora.gr.jp"]: (node: any) => {
-        if (node.tagName.toLowerCase() === 'div' && node.classList.contains('main_text')) return node
-    },
-    ["youtube.com"]: (node: any) => {
-        // 检查是否应该跳过该节点
-        if (shouldSkipYouTubeElement(node)) {
-            debugLog('Compat', '跳过YouTube元素:', node.textContent);
-            return { skip: true };
-        }
-        
-        // 视频标题
-        const videoTitle = findMatchingElement(node, 'h1.title');
-        if (videoTitle) {
-            debugLog('YouTube', '翻译视频标题', videoTitle.textContent);
-            return videoTitle;
-        }
-        
-        // 视频描述
-        const videoDescription = findMatchingElement(node, 'div#description-inline-expander');
-        if (videoDescription) {
-            debugLog('YouTube', '翻译视频描述', videoDescription.textContent?.substring(0, 50) + '...');
-            return videoDescription;
-        }
-        
-        // 评论内容
-        const commentContent = findMatchingElement(node, 'yt-formatted-string#content-text');
-        if (commentContent) {
-            debugLog('YouTube', '翻译评论内容', commentContent.textContent);
-            return commentContent;
-        }
-        
-        // 频道简介
-        const channelDescription = findMatchingElement(node, 'div#description');
-        if (channelDescription) {
-            debugLog('YouTube', '翻译频道简介', channelDescription.textContent?.substring(0, 50) + '...');
-            return channelDescription;
-        }
-
-        // 播放列表描述
-        const playlistDescription = findMatchingElement(node, 'yt-formatted-string.ytd-playlist-panel-renderer');
-        if (playlistDescription) {
-            debugLog('YouTube', '翻译播放列表描述', playlistDescription.textContent);
-            return playlistDescription;
-        }
-        
-        // 视频卡片标题
-        const videoCardTitle = findMatchingElement(node, 'yt-formatted-string.ytd-compact-video-renderer');
-        if (videoCardTitle) {
-            debugLog('YouTube', '翻译视频卡片标题', videoCardTitle.textContent);
-            return videoCardTitle;
-        }
-        
-        // 社区帖子内容
-        const communityPost = findMatchingElement(node, 'div#content');
-        if (communityPost && communityPost.closest('ytd-backstage-post-renderer')) {
-            debugLog('YouTube', '翻译社区帖子', communityPost.textContent?.substring(0, 50) + '...');
-            return communityPost;
-        }
-        
-        // 字幕内容
-        const captionText = findMatchingElement(node, 'span.captions-text');
-        if (captionText) {
-            debugLog('YouTube', '翻译字幕内容', captionText.textContent);
-            return captionText;
-        }
-        
-        // 视频信息文本 - 一般格式化字符串处理
-        if (node.tagName.toLowerCase() === 'yt-formatted-string' && 
-            node.textContent?.trim() &&
-            node.textContent.length > 5) {
-            // 检查是否不在按钮或控制区域内
-            let isInControl = false;
-            let parent = node.parentElement;
-            while (parent) {
-                if (parent.id === 'top-level-buttons-computed' || 
-                    parent.id === 'subscribe-button' || 
-                    parent.classList?.contains('ytd-menu-renderer')) {
-                    isInControl = true;
-                    break;
-                }
-                parent = parent.parentElement;
-            }
-            
-            if (!isInControl) {
-                debugLog('YouTube', '翻译格式化字符串', node.textContent);
-                return node;
-            }
-        }
-        
-        // 默认不翻译
-        return false;
-    },
-    ['webtrees.net']: (node: any) => {
-        // class='kmsg'
-        if (node.tagName.toLowerCase() === 'div' && node.classList.contains('kmsg')) return node
-    },
-    ['x.com']: (node: any) => {
-        // 需要先检查是否为应该跳过的元素
-        if (shouldSkipTwitterElement(node)) {
-            // 开发模式下记录被跳过的Twitter元素
-            debugLog('Compat', '跳过Twitter元素:', node.textContent);
-            return { skip: true };
-        }
-        
-        // 个人简介
-        const userDescription = findMatchingElement(node, 'div[data-testid="UserDescription"]'); 
-        if (userDescription) return userDescription;
-        
-        // 推文正文 - 但不包括用户名提及部分
-        const tweetText = findMatchingElement(node, 'div[data-testid="tweetText"]');
-        if (tweetText) return tweetText;
-        
-        // 默认返回false，表示不翻译
-        return false;
-    },
-    ['github.com']: (node: any) => {
-        // 判断是否应该跳过该节点
-        if (shouldSkipGitHubElement(node)) {
-            return { skip: true };
-        }
-        
-        // 检查是否为目录节点
-        if (isGitHubPathOrFileName(node)) {
-            debugLog('GitHub', '目录/文件名跳过', node.textContent);
-            return { skip: true };
-        }
-        
-        // 首先翻译最重要的文本内容
-        
-        // 问题（Issue）和PR内容
-        const issueBody = findMatchingElement(node, 'div.comment-body');
-        if (issueBody) return issueBody;
-        
-        // 评论内容
-        const comment = findMatchingElement(node, 'div.comment-body td.comment-body');
-        if (comment) return comment;
-        
-        // 然后翻译次要但仍然重要的内容
-        
-        // 问题（Issue）标题
-        const issueTitle = findMatchingElement(node, 'div.js-issue-title');
-        if (issueTitle) return issueTitle;
-        
-        // PR描述
-        const prDescription = findMatchingElement(node, 'div.pull-request-review-comment');
-        if (prDescription) return prDescription;
-        
-        // 仓库描述
-        const repoDescription = findMatchingElement(node, 'p.f4.my-3');
-        if (repoDescription) return repoDescription;
-        
-        // 代码提交信息
-        const commitMessage = findMatchingElement(node, 'div.commit-desc pre');
-        if (commitMessage) return commitMessage;
-        
-        // 项目关于（About）文本
-        const aboutText = findMatchingElement(node, 'div.BorderGrid-cell > p');
-        if (aboutText) return aboutText;
-        
-        // 最后翻译其他辅助内容
-        
-        // PR状态信息
-        const prStatus = findMatchingElement(node, 'div.merge-status-item span.status-meta');
-        if (prStatus) return prStatus;
-        
-        // 项目语言描述
-        const languageDesc = findMatchingElement(node, 'div.f6.color-fg-muted.mt-2');
-        if (languageDesc) return languageDesc;
-        
-        // 个人简介
-        const profile = findMatchingElement(node, 'div.p-note.user-profile-bio');
-        if (profile) return profile;
-        
-        // 仓库列表项说明
-        const repoListDesc = findMatchingElement(node, 'p.pinned-item-desc');
-        if (repoListDesc) return repoListDesc;
-        
-        // Action运行日志
-        const actionLog = findMatchingElement(node, 'div.js-log-container pre');
-        if (actionLog) return actionLog;
-        
-        // 默认不翻译
-        return false;
-    },
-    ['stackoverflow.com']: (node: any) => {
-        // 判断是否应该跳过该节点
-        if (shouldSkipStackOverflowElement(node)) {
-            return { skip: true };
-        }
-        
-        // 首先翻译最重要的内容
-        
-        
-        // 然后翻译次要但仍然重要的内容
-        
-        // 问题标题
-        const questionTitle = findMatchingElement(node, 'h1.question-hyperlink');
-        if (questionTitle) return questionTitle;
-        
-        // 问题描述摘要
-        const excerpt = findMatchingElement(node, 'div.excerpt');
-        if (excerpt) return excerpt;
-        
-        // 最后翻译其他辅助内容
-        
-        // 问题状态提示
-        const status = findMatchingElement(node, 'div.question-status');
-        if (status) return status;
-        
-        // 用户简介
-        const userProfile = findMatchingElement(node, 'div.profile-about');
-        if (userProfile) return userProfile;
-        
-        // 错误提示
-        const errorMessage = findMatchingElement(node, 'div.s-notice');
-        if (errorMessage) return errorMessage;
-        
-        // 默认不翻译
-        return false;
-    },
-    ['medium.com']: (node: any) => {
-        // 判断是否应该跳过该节点
-        if (shouldSkipMediumElement(node)) {
-            return { skip: true };
-        }
-        
-        // 文章标题
-        const articleTitle = findMatchingElement(node, 'h1');
-        if (articleTitle) return articleTitle;
-        
-        // 文章副标题
-        const articleSubtitle = findMatchingElement(node, 'h2');
-        if (articleSubtitle) return articleSubtitle;
-        
-        // 文章段落
-        const articleParagraph = findMatchingElement(node, 'p');
-        if (articleParagraph) return articleParagraph;
-        
-        // 文章列表项
-        const articleListItem = findMatchingElement(node, 'li');
-        if (articleListItem) return articleListItem;
-        
-        // 引用内容
-        const blockquote = findMatchingElement(node, 'blockquote');
-        if (blockquote) return blockquote;
-        
-        // 文章正文容器
-        const articleBody = findMatchingElement(node, 'article section');
-        if (articleBody) return articleBody;
-        
-        // 作者简介
-        const authorBio = findMatchingElement(node, 'p.pw-author-note');
-        if (authorBio) return authorBio;
-        
-        // 评论内容
-        const comment = findMatchingElement(node, 'div.pw-responses-thread p');
-        if (comment) return comment;
-        
-        // 默认不翻译
-        return false;
-    },
-    ['reddit.com']: (node: any) => {
-        // 判断是否应该跳过该节点
-        if (shouldSkipRedditElement(node)) {
-            debugLog('Reddit', '跳过Reddit元素', node.textContent);
-            return { skip: true };
-        }
-        
-        const redditSegment = findMatchingElement(node, REDDIT_SEGMENT_SELECTOR);
-        if (redditSegment && findMatchingElement(redditSegment, REDDIT_CONTENT_SELECTOR)) {
-            debugLog('Reddit', '翻译内容块', redditSegment.textContent?.substring(0, 50) + '...');
-            return redditSegment;
-        }
-        
-        // 默认不翻译
-        return false;
-    },
-    ['news.ycombinator.com']: (node: any) => {
-        // 判断是否应该跳过该节点
-        if (shouldSkipHNElement(node)) {
-            return { skip: true };
-        }
-        
-        // 帖子标题
-        const storyTitle = findMatchingElement(node, 'td.title a.titlelink');
-        if (storyTitle) return storyTitle;
-        
-        // 评论内容
-        const comment = findMatchingElement(node, 'div.comment span.commtext');
-        if (comment) return comment;
-        
-        // 帖子文本
-        const storyText = findMatchingElement(node, 'div.toptext');
-        if (storyText) return storyText;
-        
-        // 用户简介
-        const userAbout = findMatchingElement(node, 'td.default');
-        if (userAbout) return userAbout;
-        
-        // 默认不翻译
-        return false;
-    }
+    // 默认处理：直接替换innerHTML
+    node.innerHTML = newNode.innerHTML;
 }
 
 /**
@@ -1526,291 +1288,6 @@ function shouldSkipMediumElement(node: any): boolean {
     return false;
 }
 
-/**
- * 判断是否应该跳过Reddit网站上的特定元素
- */
-function shouldSkipRedditElement(node: any): boolean {
-    // 检查是否为特殊内容（URL、邮箱、用户名等）
-    if (node.textContent && isSpecialContent(node.textContent)) {
-        debugLog('Reddit', '特殊内容跳过', node.textContent);
-        return true;
-    }
-    
-    // 处理帖子标题中的屏幕阅读器内容
-    if (node.tagName?.toLowerCase() === 'faceplate-screen-reader-content') {
-        debugLog('Reddit', '屏幕阅读器内容跳过', node.textContent);
-        return true;
-    }
-    
-    // 处理帖子中的时间标签
-    if (node.tagName?.toLowerCase() === 'time') {
-        debugLog('Reddit', '时间标签跳过', node.textContent);
-        return true;
-    }
-    
-    // 如果当前节点或其祖先节点匹配这些选择器，则跳过
-    const skipSelectors = [
-        // 导航栏和头部
-        'header', 
-        'div._3Qx5bBCG_O8wVZee9J-KyJ', // Reddit的头部容器
-        'div._1x6pySZ2CoUnAfsFhGe7J1', // 导航栏
-        'div._1QhgSEQa6-vyHBHcV0rygZ', // 顶部横幅
-        'nav, div[data-testid="subreddit-header"]', // 导航区域
-        'div._3ozFtOe6WpJEMUtxDOIvtU', // 菜单条
-        'div._2QZ7T4uAFMs_N83BZcN-Em', // 排序栏
-        
-        // Reddit新UI元素
-        'faceplate-timeago', // 时间显示组件
-        'a[data-ks-id]', // 帖子链接
-        'shreddit-post[data-ks-item]', // 帖子组件
-        'a[slot="full-post-link"]', // 完整帖子链接
-        'span[slot="credit-bar"]', // 信用栏
-        'shreddit-post-flair', // 帖子标签
-        'shreddit-join-button', // 加入按钮
-        'shreddit-post-overflow-menu', // 溢出菜单
-        'shreddit-async-loader', // 异步加载器
-        'faceplate-hovercard', // 悬停卡片
-        'faceplate-tracker', // 跟踪器
-        'faceplate-number', // 数字格式化组件
-        'shreddit-distinguished-post-tags', // 特殊帖子标签
-        
-        // 侧边栏
-        'div._1OVBBWLtHoSPfGCRaPzpTf', // 侧边栏容器
-        'div.wBtTDilkW_zr1D60d6V2Z', // 侧边栏组件
-        'div._3Qkp11fjcAw9I9wtLo8frE', // 边栏卡片
-        'div._1HSQGYlfPWzs40LP8sZqzT', // 社区边栏
-        'div._2vEf-C2keJaBMY9qk_BxVn', // 侧边栏块
-        'div._3Qkp11fjcAw9I9wtLo8frE', // 社区信息卡
-        'div._2QmHYFeMADTpuXJtd36LQs', // 边栏模块
-        
-        // 表单元素
-        'form', 'input', 'textarea', 'button',
-        'button._3QMG29bQNj9RUoGMvSHpZg', // 主要按钮
-        'button._10K5i7NW6qcm-UoCtpB3aK', // 次要按钮
-        'div._3QMG29bQNj9RUoGMvSHpZg, div._10K5i7NW6qcm-UoCtpB3aK', // 按钮容器
-        
-        // 帖子操作区
-        'div._1ixsU4oQRnNfZ91jhBU74y', // 投票区
-        'div._3-SW6hQX6gXK9G4FM74obr', // 评论操作区
-        'div._2hw0iZ3L5x8UbnfX8ZDKb', // 操作按钮组
-        'div[data-testid="post-comment-header"]', // 评论头部
-        'div[data-click-id="upvote"]', // 投票按钮
-        'div[data-click-id="downvote"]', // 踩按钮
-        'div[data-click-id="share"]', // 分享按钮
-        'div[data-click-id="comments"]', // 评论按钮
-        
-        // Reddit特定视图元素
-        'div[data-post-click-location="text-body"]', // 帖子正文点击区域
-        'div.md.feed-card-text-preview', // 帖子预览
-        'div#feed-post-credit-bar', // 帖子信用栏
-        'span.created-separator', // 创建分隔符
-        'span.inline-block.my-0.created-separator', // 分隔符
-        'div[data-testid="post-content"]', // 帖子内容
-        
-        // 投票和互动小组件 - 从截图中可见的元素
-        'button._2pFdCpgBihIaYh9DSMWBIu', // 通用按钮
-        'div._1E9mcoVn4MYnuBQSVDt1gC', // 投票区域容器
-        'span._vaFo96phV6L5Hltvwcox', // 投票计数元素
-        'div._3-SW6hQX6gXK9G4FM74obr', // 操作按钮区
-        'div._3Qkp11fjcAw9I9wtLo8frE', // 帖子信息卡
-        'div._2X6EB3ZhEeXCh1eIVA64XM, div._1hwEKkB_38tIoal6fcdrt9', // 内置小组件
-        'div._3nSp9cdBpqL13CqjdMr2L_', // 统计信息元素
-        'div._2FKpII1jz0h6xCAw1kQAvS, div._2xLbdLcm9WYMj6tMTDwBmf', // 互动区域
-        'div._3U_7i38RDFqmOFXMuRZYvZ, div._VmOLt6lJfSjP8Pr5DL9T', // 分享和存储按钮
-        
-        // Reddit新版统计元素
-        'span[data-testid="community-hover-card:active-count"]', // 社区活跃用户计数
-        'span.bg-kiwigreen-400', // 在线状态指示器
-        'span.text-12.leading-4.text-neutral-content-weak', // 状态文本
-        
-        // 界面控制元素
-        'a[href="/settings"]', // 设置链接
-        'div[role="menu"]', // 菜单角色元素
-        'div[role="button"]', // 按钮角色元素
-        'div._JRBNstMcGxbZUxrrIKXe, div._2IHh1GBfUxJVQQX0dJvAEf', // 折叠/展开控制
-        'div._3MknXZVbkWU8JL9XGlzASi, div._3Z6MIaeww5FJSez7H2YWXi', // 滚动控制
-        'div[data-adclicklocation="top_bar"]', // 广告位置属性
-        'a[data-click-id="subreddit"]', // 社区链接控件
-        
-        // 广告
-        'div.promotedlink', 'div._3Qkp11fjcAw9I9wtLo8frE div._2vEf-C2keJaBMY9qk_BxVn',
-        'div[data-before-content="advertisement"]', // 广告标记
-        'div[data-testid="post-container"][data-promoted="true"]', // 推广帖子
-        'div[data-testid="post"][data-promoted="true"]', // 另一种推广帖子
-        'div.ad-container, div.AdPlace', // 广告容器
-        
-        // 搜索栏
-        'div._2dkUkgReBsuY2IHM9aAHMx', // 搜索栏
-        'input[name="q"]', // 搜索输入框
-        'div._1LganuXpbKgkYX39pbmrCl, form._1QxZxZ9ntXPkuXMnfDTHzH', // 搜索表单元素
-        
-        // 底部
-        'footer', 'div._3w_665DK_NH7yIsRMuZkqB',
-        'div._3Wl-riAhLCZuDLzWNbD_z6', // 底部导航
-        'div._3qX0zy2NNkra76bgyHbrcR, div._10YWGZZj2W-2J7T-IJVVNU', // 底部链接组
-        
-        // 用户相关
-        'a[data-testid="post_author_link"]',
-        'a.author', 'span.author',
-        'a[data-testid="comment_author_link"]',
-        'div._2mHuuvyV9doV3zwbZPtIPG', // 用户信息栏
-        'a._3BcIEQadBHDKnV8E-qUMtJ', // 用户链接
-        'div._23wugcdiaj44hdfugIAlnX', // 用户标记
-        'div[data-testid="comment_author"]', // 评论作者
-        'span._12nHw-MGuz_r1dQx4wxxAf, a._12nHw-MGuz_r1dQx4wxxAf', // 用户名显示元素
-        'div[data-testid="subreddit-sidebar"] div._3ryJoIoycVkI7DggMcJiKM', // 社区用户栏
-        
-        // 统计信息
-        'span._vaFo96phV6L5Hltvwcox', // 投票数
-        'span._1jNPl3YUk6zbpLWdjaJT1r', // 评论数
-        'div._2mHuuvyV9doV3zwbZPtIPG', // 时间戳
-        'div._2ETuFsOP3jKbVR95iRImaDvU-g6W3dAQ', // 帖子信息栏
-        'div._3-SW6hQX6gXK9G4FM74obr span', // 操作按钮文本
-        'div._3XFx6CfPlg-4Usgxm0gK8R, div.BilRyRl5iuFY2VJoNfVz0', // 统计区域
-        'div._11dVAO6CK-nOlDyrYr6tsX, div._3ioGMz1QkHcUCVgLx3kzOQ', // 计数
-        'div._2hYRM7d0BaB17cCB3FGmm9', // 时间计数
-        
-        // 横幅和通知
-        'div._3q-XSJ2JokLxfTqcOzQxzf', // 新帖子通知
-        'div[data-redditstyle="true"] div._1DooEIX-1Nj5rweIc5cw_E', // 常见的横幅
-        'div._31L5xyMG1DzvGnqhbHkKV4, div._3NpZ0JJ2ZEBZXLpt7AMxgW', // 通知条
-        'div._3Im6OD67aKo33nql4FpSp0, div._2zeq1aXKDHDDXUNXAJyRVk', // 系统消息
-        
-        // 其他Reddit特定元素
-        'div._2vkeRJojnV7cb9pMlPHy7d', // Join按钮
-        'div[data-testid="frontpage-sidebar"]', // 首页侧边栏
-        'div._2vEf-C2keJaBMY9qk_BxVn button', // 侧边栏按钮
-        'div._3Qx5bBCG_O8wVZee9J-KyJ', // 头部区域
-        'div[data-testid="subreddit-name"]', // 社区名区域
-        'div._2x02fRB8KYZPG74bIR0jpe', // 帖子工具栏
-        'div[data-test-id="post-content"] video', // 视频内容
-        'div._3gbb_EMFXxTYrxDZ2kusIp', // 图片帖子
-        'div._1sDtEhccxFpHDn2ruDutJe', // 链接预览
-        'div._2wKMjKBrZFbRMP33ghA1uI', // 投票条
-        'div._3_HlHJ56dAfStT19Jgl1bF', // 投票按钮组
-        'div._pGofQ7zn0wPWxvde-6HDL', // 各种徽章
-        'div._33axOHPa8DzNnTmwzen-wO', // 奖励徽章
-        'div._2hgXdc8jVQaXYAXvnqVBBh, div._1yxKmMhLFJJp2CfU1jFZz5', // 热门/新帖子标签
-        'div._2FbYTP2kJW6pyJnjwLWr8f, div._3bl3XkXsAgnvhW0Ghm6Dh-', // 首页主题控制栏
-    ];
-    
-    // 检查当前节点是否匹配跳过选择器
-    for (const selector of skipSelectors) {
-        if (node.matches?.(selector)) {
-            debugLog('Reddit', '选择器匹配跳过', selector, node.textContent);
-            return true;
-        }
-    }
-    
-    // 检查数据属性
-    const skipDataAttributes = [
-        'click-id="share"', 'click-id="upvote"', 'click-id="downvote"', 'click-id="award"', 
-        'click-id="comments"', 'click-id="save"', 'click-id="vote-arrows"', 'click-id="media"',
-        'adclicklocation', 'promoted="true"', 'test-id="comment-top-meta"'
-    ];
-    
-    for (const attr of skipDataAttributes) {
-        if (node.hasAttribute && node.hasAttribute(attr)) {
-            debugLog('Reddit', '数据属性匹配跳过', attr);
-            return true;
-        }
-    }
-    
-    // 检查节点的类名是否包含特定关键字
-    const skipClassKeywords = [
-        '_', 'icon', 'Button', 'vote', 'score', 'flair', 'author',
-        'award', 'caret', 'expando', 'menu', 'hover', 'promoted',
-        'badge', 'thumbnail', 'timestamp', 'banner', 'hover', 'nav',
-        'submit', 'upvote', 'downvote', 'premium', 'moderator', 'join',
-        'subscribe', 'share', 'save', 'expand', 'collapse', 'points'
-    ];
-    
-    if (node.className && typeof node.className === 'string') {
-        for (const keyword of skipClassKeywords) {
-            if (node.className.includes(keyword) && node.textContent?.length < 20) {
-                debugLog('Reddit', '类名关键字跳过', keyword, node.className);
-                return true;
-            }
-        }
-    }
-    
-    // 检查是否为用户名格式
-    const textContent = node.textContent?.trim();
-    if (textContent) {
-        // Reddit用户名格式 u/username
-        if (/^u\/\w+$/.test(textContent)) {
-            debugLog('Reddit', '用户名格式跳过', textContent);
-            return true;
-        }
-        
-        // 社区名格式 r/community
-        if (/^r\/\w+$/.test(textContent)) {
-            debugLog('Reddit', '社区名格式跳过', textContent);
-            return true;
-        }
-        
-        // 跳过投票计数
-        if (/^\d+(\.\d+)?[kKmM]?$/.test(textContent) || /^[+-]?\d+(\.\d+)?[kKmM]?$/.test(textContent)) {
-            debugLog('Reddit', '投票计数跳过', textContent);
-            return true;
-        }
-        
-        // 跳过时间戳格式
-        if (/^(Posted )?\d+ (minutes|hours|days|weeks|months|years) ago$/.test(textContent)) {
-            debugLog('Reddit', '时间戳跳过', textContent);
-            return true;
-        }
-        
-        // 跳过评论计数
-        if (/^\d+(\.\d+)?[kKmM]? comments?$/.test(textContent)) {
-            debugLog('Reddit', '评论计数跳过', textContent);
-            return true;
-        }
-        
-        // 统计数字格式: "19K", "1K", 等
-        if (/^\s*\d+[KkMmBb]?\s*$/.test(textContent)) {
-            debugLog('Reddit', '统计数字跳过', textContent);
-            return true;
-        }
-        
-        // 跳过Reddit常用UI文本
-        const skipPhrases = [
-            'upvote', 'downvote', 'share', 'save', 'hide', 'report', 'crosspost',
-            'award', 'reply', 'give award', 'hide', 'comments', 'comment',
-            'best', 'top', 'new', 'controversial', 'old', 'random', 'live',
-            'hot', 'rising', 'gilded', 'wiki', 'mod', 'moderator', 'approved',
-            'submission', 'removed', 'spam', 'reported', 'locked', 'unlocked',
-            'pinned', 'unpinned', 'archived', 'unarchived', 'distinguished',
-            'undistinguished', 'spoiler', 'nsfw', 'upvoted', 'downvoted',
-            'follow', 'join', 'create post', 'community options', 'sort by',
-            'join', 'leave', 'view all comments', 'more comments', 'continue this thread',
-            'copy link', 'mark as spoiler', 'delete', 'edit', 'embed', 
-            'follow thread', 'add to collection', 'post insights', 'view poll',
-            'download', 'open in app', 'view community'
-        ];
-        
-        for (const phrase of skipPhrases) {
-            if (textContent.toLowerCase() === phrase) {
-                debugLog('Reddit', '常用UI文本跳过', textContent);
-                return true;
-            }
-        }
-    }
-    
-    // 忽略代码片段
-    if (node.tagName?.toLowerCase() === 'pre' || node.tagName?.toLowerCase() === 'code') {
-        debugLog('Reddit', '代码片段跳过');
-        return true;
-    }
-    
-    // 忽略图片和图标
-    if (node.tagName?.toLowerCase() === 'svg' || node.tagName?.toLowerCase() === 'img') {
-        debugLog('Reddit', '图片/图标跳过');
-        return true;
-    }
-    
-    return false;
-}
 
 /**
  * 判断是否应该跳过Hacker News网站上的特定元素

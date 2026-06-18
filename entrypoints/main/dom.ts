@@ -5,7 +5,6 @@ import {
     getSiteRuleRoots,
     isIgnoredBySiteRule,
     querySiteRuleNodes,
-    selectCompatFn,
     selectSiteRuleNode
 } from "@/entrypoints/main/compat";
 import { html } from 'js-beautify';
@@ -397,25 +396,12 @@ export function grabNode(node: any): any {
     // 1. 快速过滤：跳过不需要翻译的节点
     if (shouldSkipNode(node, curTag)) return false;
 
+    // 站点规则统一分发：skipNode/ignore 判跳过 → select[] 按序上卷 → applyStyles（单路，原双路 + selectCompatFn + preferRule 已合并）
     const siteRule = getSiteCompatRule(location.href);
     const siteRuleResult = selectSiteRuleNode(node, siteRule);
     if (siteRuleResult && typeof siteRuleResult === 'object' && 'skip' in siteRuleResult && siteRuleResult.skip === true) {
         return false;
     }
-    if (siteRule?.preferRule) return siteRuleResult || false;
-
-    // 2. 特殊适配：根据域名进行特殊处理
-    const domainHandler = selectCompatFn[getMainDomain(location.href.split('?')[0])];
-    if (domainHandler) {
-        const result = domainHandler(node);
-        // 如果返回的是对象且包含skip属性为true，则跳过该节点
-        if (result && typeof result === 'object' && 'skip' in result && result.skip === true) {
-            return false;
-        }
-        // 如果返回值为节点或其他真值，则返回该值作为翻译节点
-        if (result) return applySiteRuleStyles(result, siteRule);
-    }
-
     if (siteRuleResult) return siteRuleResult;
 
     if (siteRule?.autoScan === false) return false;

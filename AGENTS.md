@@ -32,7 +32,7 @@ entrypoints/
   main/
     dom.ts             # 节点抓取核心：grabNode / grabAllNode，块级/内联/跳过判定
     trans.ts           # 翻译执行：悬停翻译、全文翻译(IntersectionObserver)、还原原文
-    compat.ts          # 站点适配层：按域名定制 YouTube/Twitter/GitHub/Reddit 等规则
+    compat.ts          # 站点规则注册表：siteCompatRules 单一真相源，select[]/skipNode/replace 定制各站
   offscreen/           # Chrome 内置 Translation API 的 offscreen 文档
   popup/               # 设置面板入口（App.tsx → Header/Main/Footer）
   service/             # 各翻译服务实现，_service.ts 为分发表
@@ -45,7 +45,7 @@ styles/ + entrypoints/style.css   # 主题变量与译文样式
 
 ### 翻译数据流
 1. 触发（快捷键/悬停/全文）→ `main/trans.ts`
-2. `main/dom.ts` 的 `grabNode` 决定翻译哪个 DOM 节点（`main/compat.ts` 按域名特殊处理）
+2. `main/dom.ts` 的 `grabNode` 决定翻译哪个 DOM 节点（站点差异查 `main/compat.ts` 的 `siteCompatRules` 注册表，单路分发）
 3. `utils/translateApi.ts` 统一入口：缓存命中 → 队列(`translateQueue.ts`) → `browser.runtime.sendMessage`
 4. `background.ts` 收到消息 → `_service[config.service](message)` 调用具体服务
 5. 结果回填 DOM（双语 append / 单语 replace），写入 `utils/cache.ts`（localStorage）
@@ -72,6 +72,14 @@ styles/ + entrypoints/style.css   # 主题变量与译文样式
 4. `service/_service.ts`：独立文件需在分发表注册（`chatServices` 已自动并入）。
 5. 如需特殊请求体，在 `utils/template.ts` 加模板。
 6. `pnpm test`（`providers.test.ts` 校验下拉↔注册表一致、needs 合法）+ `pnpm compile` 验证。
+
+## 添加 / 调整站点适配
+
+站点规则集中在 `main/compat.ts` 的 `siteCompatRules`（单一真相源，详见 `CONTEXT.md`）：
+
+1. 往 `siteCompatRules` 加一条 `SiteCompatRule`：`pattern`（域名，逗号分隔可多个、支持路径前缀）、`selector`（要翻译的元素；多个用数组，**首项=全局扫描选择器，整组=hover 上卷链**）、`ignoreSelector`（跳过）、`autoScan: false`（只按 selector 扫描，不做通用 TreeWalker）、`rootsSelector`（限定扫描根）。
+2. CSS 选择器表达不了的跳过启发式 → `skipNode?(node)=>boolean`（仅 hover/单节点路径生效）；需要保留原 DOM 结构的译文回填 → `replace?(node,text)`。
+3. `pnpm test`（`site-rules.test.ts` 黄金快照锁站点的选择/跳过决策）+ `pnpm compile`。
 
 ## 注意事项
 

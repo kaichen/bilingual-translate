@@ -1,4 +1,4 @@
-import { method } from "../utils/constant";
+import { method } from "../../utils/constant";
 import { config } from "@/entrypoints/utils/config";
 import CryptoJS from 'crypto-js';
 

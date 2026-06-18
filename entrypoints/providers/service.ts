@@ -1,16 +1,16 @@
 import {services} from "../utils/option";
-import microsoft from "../service/microsoft";
-import deepl from "../service/deepl";
-import deeplx from "../service/deeplx";
-import zhipu from "../service/zhipu";
-import yiyan from "../service/yiyan";
-import google from "../service/google";
-import xiaoniu from "../service/xiaoniu";
-import youdao from "../service/youdao";
-import tencent from "../service/tencent";
-import chromeTranslator from "../service/chrome-translator";
-import hunyuanTranslation from "../service/hunyuan-translation";
-import {chatServices} from "../service/chat";
+import microsoft from "./translate/microsoft";
+import deepl from "./translate/deepl";
+import deeplx from "./translate/deeplx";
+import zhipu from "./llm/zhipu";
+import yiyan from "./llm/yiyan";
+import google from "./translate/google";
+import xiaoniu from "./translate/xiaoniu";
+import youdao from "./translate/youdao";
+import tencent from "./translate/tencent";
+import chromeTranslator from "./translate/chrome-builtin-ai";
+import hunyuanTranslation from "./translate/hunyuan";
+import {chatServices} from "./llm/chat";
 
 type ServiceFunction = (message: any) => Promise<any>;
 type ServiceMap = {[key: string]: ServiceFunction;};

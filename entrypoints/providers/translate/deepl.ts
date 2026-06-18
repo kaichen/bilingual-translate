@@ -1,6 +1,6 @@
-import {method} from "../utils/constant";
+import {method} from "../../utils/constant";
 import {urls} from "@/entrypoints/providers/registry";
-import {services} from "../utils/option";
+import {services} from "../../utils/option";
 import {config} from "@/entrypoints/utils/config";
 
 async function deepl(message: any) {

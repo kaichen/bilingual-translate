@@ -1,9 +1,9 @@
 // AI chat-completion adapter：统一 fetch / 错误处理 / contentPostHandler。
 // per-provider 变化点收敛为两段生命周期钩子 onRequest / onResponse，全缺省即 OpenAI 兼容。
 // 详见 CONTEXT.md。本模块是 dispatch 脏层（import config），不追求单测。
-import { method } from "../utils/constant";
+import { method } from "../../utils/constant";
 import { urls } from "@/entrypoints/providers/registry";
-import { customModelString, services } from "../utils/option";
+import { customModelString, services } from "../../utils/option";
 import { config } from "@/entrypoints/utils/config";
 import { contentPostHandler } from "@/entrypoints/utils/check";
 import {
@@ -14,7 +14,7 @@ import {
     geminiMsgTemplate,
     minimaxTemplate,
     tongyiMsgTemplate,
-} from "../utils/template";
+} from "../../utils/template";
 
 export interface RequestParts {
     url: string;

@@ -1,4 +1,4 @@
-import {method} from "../utils/constant";
+import {method} from "../../utils/constant";
 import {config} from "@/entrypoints/utils/config";
 
 async function google(message: any) {

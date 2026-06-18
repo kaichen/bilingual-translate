@@ -46,7 +46,21 @@ export const inlineSet = new Set([
 export const SOURCE_KEY_ATTR = 'data-bt-source-key';
 const TRANSLATED_ATTR = 'data-bt-translated';
 const TRANSLATED_ID_ATTR = 'data-bt-node-id';
-const TRANSLATION_UI_SELECTOR = '.bilingual-translate-bilingual-content, .bilingual-translate-loading, .bilingual-translate-retry-wrapper';
+const LEGACY_SOURCE_KEY_ATTR = 'data-fr-source-key';
+const LEGACY_TRANSLATED_ATTR = 'data-fr-translated';
+const LEGACY_TRANSLATED_ID_ATTR = 'data-fr-node-id';
+const TRANSLATION_UI_SELECTOR = [
+    '.bilingual-translate-bilingual-content',
+    '.bilingual-translate-bilingual-text',
+    '.bilingual-translate-loading',
+    '.bilingual-translate-retry-wrapper',
+    '.bilingual-translate-failure',
+    '.fluent-read-bilingual-content',
+    '.fluent-read-bilingual-text',
+    '.fluent-read-loading',
+    '.fluent-read-retry-wrapper',
+    '.fluent-read-failure',
+].join(', ');
 const MIN_TRANSLATABLE_TEXT_LENGTH = 3;
 const MAX_TRANSLATABLE_TEXT_LENGTH = 3072;
 const MAX_TRANSLATABLE_OUTER_HTML_LENGTH = 4096;
@@ -118,14 +132,19 @@ export function resetTranslationTargetDom(target: TranslationTarget, sourceKey?:
         target.element.removeAttribute(TRANSLATED_ATTR);
         target.element.removeAttribute(TRANSLATED_ID_ATTR);
         target.element.removeAttribute(SOURCE_KEY_ATTR);
+        target.element.removeAttribute(LEGACY_TRANSLATED_ATTR);
+        target.element.removeAttribute(LEGACY_TRANSLATED_ID_ATTR);
+        target.element.removeAttribute(LEGACY_SOURCE_KEY_ATTR);
         target.element.classList.remove('bilingual-translate-bilingual');
+        target.element.classList.remove('fluent-read-bilingual');
         return;
     }
 
     let sibling = target.anchor.nextSibling;
     while (sibling instanceof HTMLElement && sibling.matches(TRANSLATION_UI_SELECTOR)) {
         const nextSibling = sibling.nextSibling;
-        if (!sourceKey || sibling.getAttribute(SOURCE_KEY_ATTR) === sourceKey || !sibling.hasAttribute(SOURCE_KEY_ATTR)) {
+        const siblingSourceKey = getTranslationUiSourceKey(sibling);
+        if (!sourceKey || siblingSourceKey === sourceKey || !siblingSourceKey) {
             sibling.remove();
         }
         sibling = nextSibling;
@@ -133,6 +152,8 @@ export function resetTranslationTargetDom(target: TranslationTarget, sourceKey?:
 }
 
 export function insertTranslationNodeForTarget(target: TranslationTarget, translationNode: HTMLElement) {
+    removeExistingTranslationNodeForTarget(target, translationNode);
+
     if (target.kind === 'element') {
         target.element.classList.add('bilingual-translate-bilingual');
         smashTruncationStyle(target.element);
@@ -163,6 +184,8 @@ function getRawTranslatableElements(rootNode: Node): Element[] {
             NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
             {
                 acceptNode: (node: Node): number => {
+                    if (isInTranslationUi(node)) return NodeFilter.FILTER_REJECT;
+
                     if (node instanceof Text) return NodeFilter.FILTER_ACCEPT;
 
                     if (!(node instanceof Element)) return NodeFilter.FILTER_SKIP;
@@ -321,6 +344,8 @@ function isCandidateBoundary(node: Node, candidateSet: Set<Element>): boolean {
 }
 
 function isGroupableDirectNode(node: Node): boolean {
+    if (isInTranslationUi(node)) return false;
+
     if (node.nodeType === Node.TEXT_NODE) {
         return Boolean(node.textContent?.trim());
     }
@@ -352,6 +377,8 @@ function shouldSkipText(text: string): boolean {
 export function grabNode(node: any): any {
     // 空节点检查
     if (!node) return false;
+
+    if (isInTranslationUi(node)) return false;
 
     // 对于 Text 节点，尝试找到其可翻译的父节点
     if (node instanceof Text) {
@@ -423,7 +450,7 @@ function shouldSkipNode(node: any, tag: string): boolean {
     // 4. 判断文本是否过长
     // 5. 判断文本是否为纯数字或标准数字格式（仅当节点内容几乎全是数字时才跳过）
     return skipSet.has(tag) ||
-        isTranslationUiNode(node) ||
+        isInTranslationUi(node) ||
         node.classList?.contains('notranslate') ||
         node.isContentEditable ||
         checkTextSize(node) ||
@@ -477,11 +504,43 @@ function isSimplePhraseContent(node: any): boolean {
     return isSimplePhraseText(node.textContent);
 }
 
-function isTranslationUiNode(node: any): boolean {
-    return node?.classList?.contains('bilingual-translate-bilingual-content') ||
-        node?.classList?.contains('bilingual-translate-loading') ||
-        node?.classList?.contains('bilingual-translate-retry-wrapper') ||
-        node?.classList?.contains('bilingual-translate-failure');
+function isInTranslationUi(node: any): boolean {
+    const element = getClosestElement(node);
+    return Boolean(element?.closest(TRANSLATION_UI_SELECTOR));
+}
+
+function getClosestElement(node: any): Element | null {
+    if (!node) return null;
+    if (node instanceof Element) return node;
+    if (node instanceof Node) return node.parentElement;
+    return null;
+}
+
+function getTranslationUiSourceKey(node: Element): string | null {
+    return node.getAttribute(SOURCE_KEY_ATTR) || node.getAttribute(LEGACY_SOURCE_KEY_ATTR);
+}
+
+function removeExistingTranslationNodeForTarget(target: TranslationTarget, translationNode: HTMLElement) {
+    const sourceKey = getTranslationUiSourceKey(translationNode);
+    if (!sourceKey) return;
+
+    if (target.kind === 'element') {
+        target.element.querySelectorAll(TRANSLATION_UI_SELECTOR).forEach(node => {
+            if (node instanceof Element && getTranslationUiSourceKey(node) === sourceKey) {
+                node.remove();
+            }
+        });
+        return;
+    }
+
+    let sibling = target.anchor.nextSibling;
+    while (sibling instanceof HTMLElement && sibling.matches(TRANSLATION_UI_SELECTOR)) {
+        const nextSibling = sibling.nextSibling;
+        if (getTranslationUiSourceKey(sibling) === sourceKey) {
+            sibling.remove();
+        }
+        sibling = nextSibling;
+    }
 }
 
 // 检查节点内容是否主要为数字

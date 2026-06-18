@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   collectTranslationTargets,
+  SOURCE_KEY_ATTR,
   getTranslationTargetText,
   grabAllNode,
   grabTranslationTarget,
@@ -34,6 +35,12 @@ function translationSpan(text: string): HTMLSpanElement {
   return span;
 }
 
+function keyedTranslationSpan(text: string, sourceKey: string): HTMLSpanElement {
+  const span = translationSpan(text);
+  span.setAttribute(SOURCE_KEY_ATTR, sourceKey);
+  return span;
+}
+
 describe("translation target normalization", () => {
   beforeEach(() => {
     (window as Window & { happyDOM?: { setURL(url: string): void } }).happyDOM?.setURL(hnUrl);
@@ -64,6 +71,44 @@ describe("translation target normalization", () => {
     expect(Array.from(document.querySelectorAll(".bilingual-translate-bilingual-content")).map(node => node.textContent)).toEqual([
       "引用译文",
       "段落译文",
+    ]);
+    expect(comment.classList.contains("bilingual-translate-bilingual")).toBe(false);
+  });
+
+  it("does not collect inserted translation UI or its text descendants", () => {
+    (window as Window & { happyDOM?: { setURL(url: string): void } }).happyDOM?.setURL("https://example.com/article");
+    document.body.innerHTML = `
+      <ul>
+        <li>
+          Decoder Src Attention explains encoder behavior.
+          <span class="fluent-read-bilingual-content" data-fr-source-key="Decoder Src Attention explains encoder behavior.">
+            <span class="fluent-read-bilingual-text fluent-display-dot-underline">解码器 Src Attention</span>
+          </span>
+        </li>
+      </ul>
+    `;
+
+    const translationContainer = document.querySelector(".fluent-read-bilingual-content") as HTMLElement;
+    const translationText = document.querySelector(".fluent-read-bilingual-text") as HTMLElement;
+    const targetTexts = collectTranslationTargets(document.body).map(getTranslationTargetText);
+
+    expect(collectTranslationTargets(translationContainer)).toEqual([]);
+    expect(grabTranslationTarget(translationText)).toBe(false);
+    expect(targetTexts.some(text => text.includes("解码器 Src Attention"))).toBe(false);
+  });
+
+  it("replaces same-source translation content when insertion repeats", () => {
+    const { comment } = renderHNComment();
+    const targets = collectTranslationTargets(document.body);
+
+    insertTranslationNodeForTarget(targets[0], keyedTranslationSpan("引用译文一", "quote-source"));
+    insertTranslationNodeForTarget(targets[0], keyedTranslationSpan("引用译文二", "quote-source"));
+    insertTranslationNodeForTarget(targets[1], keyedTranslationSpan("段落译文一", "paragraph-source"));
+    insertTranslationNodeForTarget(targets[1], keyedTranslationSpan("段落译文二", "paragraph-source"));
+
+    expect(Array.from(document.querySelectorAll(".bilingual-translate-bilingual-content")).map(node => node.textContent)).toEqual([
+      "引用译文二",
+      "段落译文二",
     ]);
     expect(comment.classList.contains("bilingual-translate-bilingual")).toBe(false);
   });

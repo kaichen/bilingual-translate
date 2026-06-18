@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { storage } from '@wxt-dev/storage';
 import browser from 'webextension-polyfill';
 import { Config } from '../entrypoints/utils/model';
+import { type ContentMessage } from '@/entrypoints/utils/messages';
 import './popup-components.css';
 
 export default function Footer() {
@@ -35,7 +36,7 @@ export default function Footer() {
         throw new Error('No active tab found');
       }
 
-      await browser.tabs.sendMessage(tabs[0].id, { message: 'clearCache' });
+      await browser.tabs.sendMessage(tabs[0].id, { type: 'clearCache' } satisfies ContentMessage);
       setButtonText('清除成功');
     } catch (error) {
       console.error('清除缓存失败:', error);

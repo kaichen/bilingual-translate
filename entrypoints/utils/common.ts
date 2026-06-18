@@ -36,6 +36,11 @@ export function detectlang(origin: string): string {
     }
 }
 
+// 若文本语言已是目标语言，则跳过翻译（去空白后用 detectlang 判定）。纯函数，可单测。
+export function shouldSkipTranslation(text: string, targetLang: string): boolean {
+    return detectlang(text.replace(/[\s　]/g, '')) === targetLang;
+}
+
 // 获取触摸点的中心位置
 export function getCenterPoint(touches: TouchList, point: number): { x: number, y: number } | undefined {
     // 检查触摸点数量是否等于指定的数量

@@ -6,20 +6,13 @@ import { defaultOption, options, services } from '../entrypoints/utils/option';
 import { models, providerOf, type Need } from '../entrypoints/utils/providers';
 import { Config } from '@/entrypoints/utils/model';
 import { parseHotkey } from '@/entrypoints/utils/hotkey';
+import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse } from '@/entrypoints/utils/messages';
 import CustomHotkeyInput from './CustomHotkeyInput';
 import './Main.css';
 
 type ToastType = 'success' | 'warning' | 'error';
 
-type TranslatePageResponse = {
-  status?: string;
-  action?: string;
-};
-
-type TranslationStateResponse = {
-  isTranslated?: boolean;
-};
-
+// 消息与响应类型集中在 utils/messages.ts
 type SelectOption = {
   value: string | number | boolean;
   label: string;
@@ -214,7 +207,7 @@ export default function Main() {
       const response = (await browser.runtime.sendMessage({
         type: 'getTranslationState',
         tabId,
-      })) as TranslationStateResponse;
+      } satisfies BackgroundMessage)) as TranslationStateResponse;
       setTranslatePageActive(Boolean(response?.isTranslated));
     }).catch(() => undefined);
   }, [ready]);
@@ -265,7 +258,7 @@ export default function Main() {
       const response = (await browser.tabs.sendMessage(tabId, {
         type: 'contextMenuTranslate',
         action: translatePageActive ? 'restore' : 'fullPage',
-      })) as TranslatePageResponse;
+      } satisfies ContentMessage)) as ContextMenuTranslateResponse;
 
       if (response?.status !== 'success') {
         throw new Error(`内容脚本未返回成功状态: ${JSON.stringify(response)}`);
@@ -277,7 +270,7 @@ export default function Main() {
         type: 'setTranslationState',
         tabId,
         isTranslated: nextActive,
-      }).catch(() => undefined);
+      } satisfies BackgroundMessage).catch(() => undefined);
       notify('success', nextActive ? '已开始翻译当前网页' : '已移除当前网页翻译');
     } catch (error) {
       console.error('触发当前网页翻译失败:', error);

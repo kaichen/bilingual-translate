@@ -17,8 +17,8 @@ import {
     SOURCE_KEY_ATTR,
     type TranslationTarget
 } from "@/entrypoints/main/dom";
-import { detectlang, throttle } from "@/entrypoints/utils/common";
-import { getMainDomain, replaceCompatFn } from "@/entrypoints/main/compat";
+import { shouldSkipTranslation, throttle } from "@/entrypoints/utils/common";
+import { getMainDomain, getSiteCompatRule } from "@/entrypoints/main/compat";
 import { config } from "@/entrypoints/utils/config";
 import { translateText, cancelAllTranslations } from '@/entrypoints/utils/translateApi';
 
@@ -651,8 +651,8 @@ export function handleSingleTranslation(node: any, slide: boolean) {
             spinner.remove();
             htmlSet.delete(nodeOuterHTML);
 
-            // 兼容部分网站独特的 DOM 结构
-            let fn = replaceCompatFn[getMainDomain(document.location.hostname)];
+            // 兼容部分网站独特的 DOM 结构（译文回填逃生舱，原 replaceCompatFn）
+            let fn = getSiteCompatRule()?.replace;
             if (fn) fn(node, outerHTMLCache);
             else node.outerHTML = outerHTMLCache;
 
@@ -665,7 +665,7 @@ export function handleSingleTranslation(node: any, slide: boolean) {
 
 
 function bilingualTranslate(node: any, nodeOuterHTML: any) {
-    if (detectlang(node.textContent.replace(/[\s\u3000]/g, '')) === config.to) return;
+    if (shouldSkipTranslation(node.textContent, config.to)) return;
 
     let origin = node.textContent;
     let spinner = insertLoadingSpinner(node);
@@ -685,7 +685,7 @@ function bilingualTranslate(node: any, nodeOuterHTML: any) {
 
 function handleBilingualTargetTranslation(target: TranslationTarget) {
     const origin = getTranslationTargetSourceText(target);
-    if (detectlang(origin.replace(/[\s\u3000]/g, '')) === config.to) return;
+    if (shouldSkipTranslation(origin, config.to)) return;
 
     const cached = cache.localGet(origin);
     if (cached) {
@@ -704,7 +704,7 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
 
 
 export function singleTranslate(node: any) {
-    if (detectlang(node.textContent.replace(/[\s\u3000]/g, '')) === config.to) return;
+    if (shouldSkipTranslation(node.textContent, config.to)) return;
 
     let origin = servicesType.isMachine(config.service) ? node.innerHTML : LLMStandardHTML(node);
     let spinner = insertLoadingSpinner(node);

@@ -116,15 +116,9 @@ export function insertLoadingSpinner(
   spinner.className = "bilingual-translate-loading";
   if (isCache) spinner.style.borderTop = "3px solid green"; // 存在缓存时改为绿色
   
-  // 异步检查动画配置
-  import('@/entrypoints/utils/config').then(({ config }) => {
-    if (!config.animations && !spinner.classList.contains('static')) {
-      spinner.classList.add('static');
-    }
-  }).catch(() => {
-    // 忽略错误，使用默认动画
-  });
-  
+  // 动画配置：icon.ts 已静态 import config，直接读取（删除原先无意义的动态 import）
+  if (!config.animations) spinner.classList.add('static');
+
   node.appendChild(spinner);
   return spinner;
 }

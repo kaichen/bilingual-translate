@@ -3,15 +3,18 @@
  * 整合翻译队列管理，作为翻译函数和后台翻译服务之间的中间层
  */
 
-import { enqueueTranslation, clearTranslationQueue } from './translateQueue';
+import { enqueueTranslation, clearTranslationQueue, configureQueue } from './translateQueue';
 import browser from 'webextension-polyfill';
 import { config } from './config';
 import { cache } from './cache';
-import { detectlang } from './common';
+import { shouldSkipTranslation } from './common';
 import { storage } from '@wxt-dev/storage';
 
 // 调试相关
 const isDev = process.env.NODE_ENV === 'development';
+
+// 把并发上限的实时读取注入翻译队列（队列本身不 import config，保持可单测）
+configureQueue(() => config.maxConcurrentTranslations);
 
 /**
  * 翻译API的统一入口
@@ -31,7 +34,7 @@ export async function translateText(origin: string, context: string = document.t
   } = options;
 
   // 如果目标语言与当前文本语言相同，直接返回原文
-  if (detectlang(origin.replace(/[\s\u3000]/g, '')) === config.to) {
+  if (shouldSkipTranslation(origin, config.to)) {
     return origin;
   }
 

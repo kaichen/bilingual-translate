@@ -6,6 +6,8 @@ import './style.css';
 import { config, configReady } from "@/entrypoints/utils/config";
 import { cancelAllTranslations, translateText } from "@/entrypoints/utils/translateApi";
 import { mountNewApiComponent } from "@/entrypoints/utils/newApi";
+import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/utils/trigger";
+import { type ContentMessage, type BackgroundMessage } from "@/entrypoints/utils/messages";
 
 export default defineContentScript({
     matches: ['<all_urls>'],  // 匹配所有页面
@@ -22,8 +24,8 @@ export default defineContentScript({
         cache.cleaner();    // 检测是否清理缓存
 
         // background.ts
-        browser.runtime.onMessage.addListener((message: { message: string; }, sender: any, sendResponse: () => void) => {
-            if (message.message !== 'clearCache') return false;
+        browser.runtime.onMessage.addListener((message: ContentMessage, sender: any, sendResponse: () => void) => {
+            if (message.type !== 'clearCache') return false;
 
             cache.clean()
             sendResponse();
@@ -31,7 +33,7 @@ export default defineContentScript({
         });
         
         // 处理右键菜单触发的全文翻译和撤销
-        browser.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (response?: any) => void) => {
+        browser.runtime.onMessage.addListener((message: ContentMessage, sender: any, sendResponse: (response?: any) => void) => {
             if (message.type === 'contextMenuTranslate') {
                 if (message.action === 'fullPage') {
                     // 触发全文翻译
@@ -61,46 +63,7 @@ function setupManualTranslationTriggers() {
     const screen = { mouseX: 0, mouseY: 0, hotkeyPressed: false, otherKeyPressed: false, hasSlideTranslation: false };
     let mouseHotkeysPressed = new Set<string>();
     
-    // 获取当前配置的鼠标悬浮快捷键
-    const getConfiguredMouseHotkeyParts = () => {
-        // 如果选择了自定义快捷键，使用自定义的
-        const hotkeyString = config.hotkey === 'custom' 
-            ? config.customHotkey 
-            : config.hotkey;
-        
-        if (!hotkeyString || hotkeyString === 'none') {
-            return [];
-        }
-        
-        // 如果是旧的单个按键格式，直接返回
-        if (!hotkeyString.includes('+')) {
-            const k = hotkeyString.toLowerCase();
-            // 标准化修饰键名称
-            if (k === 'ctrl') return ['control'];
-            if (k === 'option') return ['alt'];
-            return [k];
-        }
-        
-        // 组合键格式
-        return hotkeyString.split('+').map(key => {
-            const k = key.toLowerCase();
-            // 标准化修饰键名称
-            if (k === 'ctrl') return 'control';
-            if (k === 'option') return 'alt';
-            return k;
-        });
-    };
-    
-    // 检查是否匹配鼠标悬浮快捷键
-    const checkMouseHotkey = () => {
-        const hotkeyParts = getConfiguredMouseHotkeyParts();
-        if (hotkeyParts.length === 0) return false;
-        
-        const allKeysPressed = hotkeyParts.every(key => mouseHotkeysPressed.has(key));
-        const exactMatch = allKeysPressed && hotkeyParts.length === mouseHotkeysPressed.size;
-        
-        return exactMatch;
-    };
+    // 悬停快捷键的解析/按键追踪/匹配纯逻辑见 utils/trigger.ts（parseHoverHotkey / eventMainKeyToken / isHoverMatch）
 
     // 1. 失去焦点时
     window.addEventListener('blur', () => {
@@ -127,46 +90,12 @@ function setupManualTranslationTriggers() {
         if (event.metaKey && !isMac) mouseHotkeysPressed.add('control'); // 非Mac系统上metaKey映射到control
         if (event.shiftKey) mouseHotkeysPressed.add('shift');
         
-        // 处理普通按键
-        const key = event.key.toLowerCase();
-        const code = event.code?.toLowerCase();
-        
-        // 处理字母键
-        if (code && code.startsWith('key')) {
-            const letter = code.slice(3).toLowerCase();
-            mouseHotkeysPressed.add(letter);
-        } else if (key.length === 1) {
-            // 单个字符的按键
-            mouseHotkeysPressed.add(key);
-        } else if (/^f\d+$/.test(key)) {
-            // 功能键 F1-F12
-            mouseHotkeysPressed.add(key);
-        } else {
-            // 特殊键映射
-            const specialKeys: Record<string, string> = {
-                'escape': 'escape',
-                'enter': 'enter',
-                'space': 'space',
-                'tab': 'tab',
-                'backspace': 'backspace',
-                'delete': 'delete',
-                'insert': 'insert',
-                'home': 'home',
-                'end': 'end',
-                'pageup': 'pageup',
-                'pagedown': 'pagedown',
-                'arrowup': 'arrowup',
-                'arrowdown': 'arrowdown',
-                'arrowleft': 'arrowleft',
-                'arrowright': 'arrowright'
-            };
-            if (specialKeys[key]) {
-                mouseHotkeysPressed.add(specialKeys[key]);
-            }
-        }
-        
+        // 处理普通主键（字母/功能键/特殊键，合并自原 keydown/keyup 两张 specialKeys 表）
+        const mainKey = eventMainKeyToken(event);
+        if (mainKey) mouseHotkeysPressed.add(mainKey);
+
         // 检查是否匹配鼠标悬浮快捷键
-        if (checkMouseHotkey()) {
+        if (isHoverMatch(mouseHotkeysPressed, parseHoverHotkey(config.hotkey, config.customHotkey))) {
             screen.hotkeyPressed = true;
             screen.otherKeyPressed = false;
         } else if (screen.hotkeyPressed) {
@@ -176,39 +105,9 @@ function setupManualTranslationTriggers() {
 
     // 3. 抬起按键时
     window.addEventListener('keyup', event => {
-        // 清除字母键状态（在检查前先清除）
-        const releasedKey = event.key.toLowerCase();
-        const releasedCode = event.code?.toLowerCase();
-        if (releasedCode && releasedCode.startsWith('key')) {
-            const letter = releasedCode.slice(3).toLowerCase();
-            mouseHotkeysPressed.delete(letter);
-        } else if (releasedKey.length === 1) {
-            mouseHotkeysPressed.delete(releasedKey);
-        } else if (/^f\d+$/.test(releasedKey)) {
-            mouseHotkeysPressed.delete(releasedKey);
-        } else {
-            // 特殊键
-            const specialKeys: Record<string, string> = {
-                'escape': 'escape',
-                'enter': 'enter',
-                'space': 'space',
-                'tab': 'tab',
-                'backspace': 'backspace',
-                'delete': 'delete',
-                'insert': 'insert',
-                'home': 'home',
-                'end': 'end',
-                'pageup': 'pageup',
-                'pagedown': 'pagedown',
-                'arrowup': 'arrowup',
-                'arrowdown': 'arrowdown',
-                'arrowleft': 'arrowleft',
-                'arrowright': 'arrowright'
-            };
-            if (specialKeys[releasedKey]) {
-                mouseHotkeysPressed.delete(specialKeys[releasedKey]);
-            }
-        }
+        // 清除主键状态（在检查前先清除，合并自原两张 specialKeys 表）
+        const releasedMainKey = eventMainKeyToken(event);
+        if (releasedMainKey) mouseHotkeysPressed.delete(releasedMainKey);
         
         // 清除修饰键状态
         if (!event.altKey) mouseHotkeysPressed.delete('alt');
@@ -216,10 +115,7 @@ function setupManualTranslationTriggers() {
         if (!event.metaKey) mouseHotkeysPressed.delete('control');
         if (!event.shiftKey) mouseHotkeysPressed.delete('shift');
         
-        // 获取当前配置的快捷键
-        const hotkeyParts = getConfiguredMouseHotkeyParts();
-        
-        // 如果当前按键集合为空，且之前激活了快捷键，且配置的快捷键不包含当前释放的键，则触发翻译
+        // 如果当前按键集合为空、之前激活过快捷键、且未按其他键、未滑动翻译，则触发悬停翻译
         if (screen.hotkeyPressed && mouseHotkeysPressed.size === 0 && !screen.otherKeyPressed && !screen.hasSlideTranslation) {
             // 检查插件是否开启
             handleTranslation(screen.mouseX, screen.mouseY);
@@ -647,9 +543,9 @@ async function translateWithMicrosoft(text: string, targetLang: string): Promise
         // 发送消息给background脚本进行翻译
         const result = await browser.runtime.sendMessage({
             type: 'inputBoxTranslation',
-            text: text,
-            targetLang: targetLang
-        });
+            text,
+            targetLang,
+        } satisfies BackgroundMessage);
         
         if (result && result.success) {
             return result.translatedText;

@@ -61,6 +61,26 @@ describe("translation target normalization", () => {
     expect(grabAllNode(document.body)).toEqual([paragraph]);
   });
 
+  it("drops non-linguistic direct node groups while keeping nested paragraph targets", () => {
+    const comment = document.createElement("div");
+    comment.className = "hn-comment-text";
+    comment.append(document.createTextNode("1/2 😂😂"));
+
+    const paragraph = document.createElement("p");
+    paragraph.textContent = "This nested paragraph should still be translated.";
+    comment.append(paragraph);
+
+    document.body.append(comment);
+
+    const targets = collectTranslationTargets(document.body);
+
+    expect(targets.map(target => target.kind)).toEqual(["element"]);
+    expect(targets.map(getTranslationTargetText)).toEqual([
+      "This nested paragraph should still be translated.",
+    ]);
+    expect(grabAllNode(document.body)).toEqual([paragraph]);
+  });
+
   it("inserts translations next to each target even when results finish out of order", () => {
     const { comment } = renderHNComment();
     const targets = collectTranslationTargets(document.body);

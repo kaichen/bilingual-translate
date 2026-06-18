@@ -3,7 +3,7 @@
  * 整合翻译队列管理，作为翻译函数和后台翻译服务之间的中间层
  */
 
-import { enqueueTranslation, clearTranslationQueue } from './translateQueue';
+import { enqueueTranslation, clearTranslationQueue, configureQueue } from './translateQueue';
 import browser from 'webextension-polyfill';
 import { config } from './config';
 import { cache } from './cache';
@@ -12,6 +12,9 @@ import { storage } from '@wxt-dev/storage';
 
 // 调试相关
 const isDev = process.env.NODE_ENV === 'development';
+
+// 把并发上限的实时读取注入翻译队列（队列本身不 import config，保持可单测）
+configureQueue(() => config.maxConcurrentTranslations);
 
 /**
  * 翻译API的统一入口

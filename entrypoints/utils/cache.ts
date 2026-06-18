@@ -1,15 +1,8 @@
-import { customModelString } from "./option";
 import { config } from "@/entrypoints/utils/config";
+import { buildKey, CACHE_PREFIX } from "./cache-key";
 
-const prefix = "btcache_"; // bilingual translate cache
-
-// 构建缓存 key
-function buildKey(message: string) {
-    const { service, model, to, style, customModel } = config;
-    const selectedModel = model[service] === customModelString ? customModel[service] : model[service];
-    // 前缀_服务_模型_目标语言_消息
-    return [prefix, style, service, selectedModel, to, message].join('_');
-}
+// key 拼接逻辑（纯）在 cache-key.ts；这里把 config 单例的相关字段喂进去
+const keyOf = (message: string) => buildKey(message, config);
 
 export const cache = {
     // 存入缓存并设置过期时间
@@ -28,7 +21,7 @@ export const cache = {
         // 如果禁用缓存，则不执行任何操作
         if (!config.useCache) return;
         
-        localStorage.setItem(buildKey(key), value);
+        localStorage.setItem(keyOf(key), value);
     },
 
     localSetDual(key: string, value: string) {
@@ -43,15 +36,15 @@ export const cache = {
         // 如果禁用缓存，则始终返回 null
         if (!config.useCache) return null;
         
-        return localStorage.getItem(buildKey(origin));
+        return localStorage.getItem(keyOf(origin));
     },
 
     localRemove(origin: string) {
-        const key = buildKey(origin);
+        const key = keyOf(origin);
         const result = localStorage.getItem(key);
         localStorage.removeItem(key);
         if (result) {
-            localStorage.removeItem(buildKey(result));
+            localStorage.removeItem(keyOf(result));
         }
     },
 
@@ -72,7 +65,7 @@ export const cache = {
         // 收集所有要删除的键
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith(prefix)) keysToDelete.push(key);
+            if (key && key.startsWith(CACHE_PREFIX)) keysToDelete.push(key);
         }
         // 批量删除
         keysToDelete.forEach(key => localStorage.removeItem(key));

@@ -1,4 +1,5 @@
-import { customModelString, services, servicesType } from "./option";
+import { customModelString, services } from "./option";
+import { servicesType } from "./providers";
 import { sendErrorMessage } from "./tip";
 import { config } from "@/entrypoints/utils/config";
 

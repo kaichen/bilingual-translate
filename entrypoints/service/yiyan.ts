@@ -1,7 +1,10 @@
 import {services} from "../utils/option";
 import {yiyanMsgTemplate} from "../utils/template";
-import {method, urls} from "../utils/constant";
+import {method} from "../utils/constant";
 import {config} from "@/entrypoints/utils/config";
+
+// 文心一言 OAuth 取 token 的私有 endpoint（非翻译 endpoint，故不进 Provider 注册表）
+const YIYAN_TOKEN_URL = "https://aip.baidubce.com/oauth/2.0/token";
 
 // ERNIE-Bot 4.0 模型，模型定价页面：https://console.bce.baidu.com/qianfan/chargemanage/list
 // api 文档中心：https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t
@@ -51,7 +54,7 @@ async function getSecret() {
     });
 
     // 发起 fetch 请求
-    const resp = await fetch(urls[config.service].tokenUrl, {
+    const resp = await fetch(YIYAN_TOKEN_URL, {
         method: method.POST,
         body: params
     });

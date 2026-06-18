@@ -1,4 +1,5 @@
-import { method, urls } from "../utils/constant";
+import { method } from "../utils/constant";
+import { urls } from "../utils/providers";
 import { deepseekMsgTemplate } from "../utils/template";
 import { config } from "@/entrypoints/utils/config";
 import { contentPostHandler } from "@/entrypoints/utils/check";

@@ -1,6 +1,7 @@
 import { checkConfig, searchClassName, skipNode } from "../utils/check";
 import { cache } from "../utils/cache";
-import { options, servicesType } from "../utils/option";
+import { options } from "../utils/option";
+import { servicesType } from "../utils/providers";
 import { insertFailedTip, insertLoadingSpinner } from "../utils/icon";
 import { styles } from "@/entrypoints/utils/constant";
 import {

@@ -53,12 +53,12 @@ styles/ + entrypoints/style.css   # 主题变量与译文样式
 ### 全局配置
 - 单一响应式对象 `config`（`utils/config.ts`，实例化 `utils/model.ts` 的 `Config` 类，含全部默认值）。
 - 持久化在 `storage.local` 的 `local:config`，通过 `storage.watch` 跨 popup/content/background 同步。
-- 改默认值或加配置项时：**同时**改 `utils/model.ts`（字段+默认值）和 `utils/option.ts`（选项/能力集合）。
+- 改默认值或加配置项时：**同时**改 `utils/model.ts`（字段+默认值）和 `utils/option.ts`（选项）。服务的能力/URL/模型集中在 `utils/providers.ts` 的 `PROVIDERS`（见 `CONTEXT.md`）。
 
 ## 约定
 
 - **语言**：代码注释、commit、与用户交流统一用**中文**。
-- **服务能力判定**：一律走 `utils/option.ts` 的 `servicesType`（`isAI`/`isUseToken`/`isUseModel`/`isUseProxy` 等），勿在业务里硬编码服务名。
+- **服务能力判定**：一律走 `utils/providers.ts` 的 `servicesType`（`isAI`/`isUseToken`/`isUseModel`/`isUseProxy`）或 `providerOf(name).needs`，勿在业务里硬编码服务名。
 - **消息模板**：AI 服务的请求体集中在 `utils/template.ts`，复用 `commonMsgTemplate` 等。
 - **样式 class 前缀**：注入页面的元素用 `bilingual-translate-*` / `bilingual-display-*` / `bt-*`，避免污染宿主页面。
 - **已翻译标记**：用 `data-bt-translated` / `data-bt-node-id` 属性追踪，便于 `restoreOriginalContent` 还原。
@@ -66,12 +66,12 @@ styles/ + entrypoints/style.css   # 主题变量与译文样式
 
 ## 添加一个新翻译服务
 
-1. `utils/option.ts`：在 `services` 加键；加入对应的 `servicesType` 集合（machine/AI、useToken、useModel、useProxy…）；在 `options.services` 加下拉项；如是 AI 在 `models` 加模型列表。
-2. `utils/constant.ts`：在 `urls` 加 API 地址。
+1. `utils/providers.ts`：在 `PROVIDERS` 加一条记录 —— `name`（用 `services` 里的键）、`kind`（machine/ai）、`url?`（静态翻译 endpoint，动态拼接/无 fetch 的留空）、`models?`、`needs`（能力词表：token/model/proxy/customUrl/aksk/youdaoKey/tencentSecret/azureEndpoint/robotId/newApiUrl）。`servicesType`/`urls`/`models` 由此自动派生。
+2. `utils/option.ts`：在 `services` 加键；在 `options.services` 加下拉项（展示顺序/分组/label 手写）。
 3. `entrypoints/service/<name>.ts`：实现 `async function(message) => string`，OpenAI 兼容的可直接复用 `service/common.ts`。
 4. `service/_service.ts`：在分发表注册。
 5. 如需特殊请求体，在 `utils/template.ts` 加模板。
-6. `pnpm compile` 验证类型。
+6. `pnpm test`（`providers.test.ts` 校验下拉↔注册表一致、needs 合法）+ `pnpm compile` 验证。
 
 ## 注意事项
 

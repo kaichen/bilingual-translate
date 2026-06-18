@@ -1,4 +1,5 @@
-import {method, urls} from "../utils/constant";
+import {method} from "../utils/constant";
+import {urls} from "../utils/providers";
 import {services} from "../utils/option";
 import {config} from "@/entrypoints/utils/config";
 

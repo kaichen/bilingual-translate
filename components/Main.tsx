@@ -2,7 +2,8 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { storage } from '@wxt-dev/storage';
 import browser from 'webextension-polyfill';
-import { defaultOption, models, options, services, servicesType } from '../entrypoints/utils/option';
+import { defaultOption, options, services } from '../entrypoints/utils/option';
+import { models, providerOf, type Need } from '../entrypoints/utils/providers';
 import { Config } from '@/entrypoints/utils/model';
 import { parseHotkey } from '@/entrypoints/utils/hotkey';
 import CustomHotkeyInput from './CustomHotkeyInput';
@@ -373,23 +374,28 @@ export default function Main() {
     notify('success', '已成功恢复默认翻译模板');
   }
 
-  const computed = useMemo(() => ({
-    showAI: servicesType.isAI(config.service),
-    showProxy: servicesType.isUseProxy(config.service),
-    showModel: servicesType.isUseModel(config.service),
-    showToken: servicesType.isUseToken(config.service),
-    showAkSk: servicesType.isUseAkSk(config.service),
-    showYoudao: servicesType.isYoudao(config.service),
-    showTencent: servicesType.isTencent(config.service),
-    model: models.get(config.service) || [],
-    showCustom: servicesType.isCustom(config.service),
-    showDeepLX: config.service === 'deeplx',
-    showCustomModel: servicesType.isAI(config.service) && config.model[config.service] === '自定义模型',
-    filteredServices: options.services.filter((serviceOption) => !(serviceOption.value === services.google && config.display !== 1)),
-    showRobotId: servicesType.isCoze(config.service),
-    showNewAPI: servicesType.isNewApi(config.service),
-    showAzureOpenaiEndpoint: servicesType.isAzureOpenai(config.service),
-  }), [config]);
+  const computed = useMemo(() => {
+    const p = providerOf(config.service);
+    const need = (n: Need) => !!p?.needs.includes(n);
+    const isAI = p?.kind === 'ai';
+    return {
+      showAI: isAI,
+      showProxy: need('proxy'),
+      showModel: need('model'),
+      showToken: need('token'),
+      showAkSk: need('aksk'),
+      showYoudao: need('youdaoKey'),
+      showTencent: need('tencentSecret'),
+      model: models.get(config.service) || [],
+      showCustom: config.service === services.custom,
+      showDeepLX: config.service === 'deeplx',
+      showCustomModel: isAI && config.model[config.service] === '自定义模型',
+      filteredServices: options.services.filter((serviceOption) => !(serviceOption.value === services.google && config.display !== 1)),
+      showRobotId: need('robotId'),
+      showNewAPI: need('newApiUrl'),
+      showAzureOpenaiEndpoint: need('azureEndpoint'),
+    };
+  }, [config]);
 
   const styleGroups = useMemo(() => {
     const groups = options.styles.filter((item) => item.disabled);

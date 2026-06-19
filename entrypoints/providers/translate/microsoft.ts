@@ -1,4 +1,4 @@
-import {services} from "../utils/option";
+import {services} from "../../utils/option";
 import {config} from "@/entrypoints/utils/config";
 
 async function microsoft(message: any) {

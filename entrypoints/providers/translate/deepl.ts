@@ -1,6 +1,6 @@
-import {method} from "../utils/constant";
-import {urls} from "../utils/providers";
-import {services} from "../utils/option";
+import {method} from "../../utils/constant";
+import {urls} from "@/entrypoints/providers/registry";
+import {services} from "../../utils/option";
 import {config} from "@/entrypoints/utils/config";
 
 async function deepl(message: any) {
@@ -35,4 +35,3 @@ async function deepl(message: any) {
 }
 
 export default deepl;
-

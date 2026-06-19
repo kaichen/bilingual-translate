@@ -1,5 +1,5 @@
-import { method } from "../utils/constant";
-import { services } from "../utils/option";
+import { method } from "../../utils/constant";
+import { services } from "../../utils/option";
 import { config } from "@/entrypoints/utils/config";
 
 // 腾讯云机器翻译语言代码映射

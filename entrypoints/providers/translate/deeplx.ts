@@ -1,5 +1,5 @@
-import {method} from "../utils/constant";
-import {services} from "../utils/option";
+import {method} from "../../utils/constant";
+import {services} from "../../utils/option";
 import {config} from "@/entrypoints/utils/config";
 
 async function deeplx(message: any) {

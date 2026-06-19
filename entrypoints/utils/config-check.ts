@@ -1,5 +1,5 @@
 import { customModelString, services } from "./option";
-import { servicesType } from "./providers";
+import { servicesType } from "@/entrypoints/providers/registry";
 
 export interface ConfigCheckSnapshot {
     service: string;

@@ -1,6 +1,6 @@
-import {services} from "../utils/option";
-import {yiyanMsgTemplate} from "../utils/template";
-import {method} from "../utils/constant";
+import {services} from "../../utils/option";
+import {yiyanMsgTemplate} from "../../utils/template";
+import {method} from "../../utils/constant";
 import {config} from "@/entrypoints/utils/config";
 import {chatCompletion} from "./chat";
 

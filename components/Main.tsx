@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { storage } from '@wxt-dev/storage';
 import browser from 'webextension-polyfill';
 import { defaultOption, options, services } from '../entrypoints/utils/option';
-import { models, providerOf, type Need } from '../entrypoints/utils/providers';
+import { models, providerOf, type Need } from '@/entrypoints/providers/registry';
 import { Config } from '@/entrypoints/utils/model';
 import { parseHotkey } from '@/entrypoints/utils/hotkey';
 import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse } from '@/entrypoints/utils/messages';

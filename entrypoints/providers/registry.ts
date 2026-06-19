@@ -1,4 +1,4 @@
-import { customModelString, services } from "./option";
+import { customModelString, services } from "../utils/option";
 
 // Provider 注册表：每个翻译服务一条记录的单一真相源。
 // servicesType / urls / models 全部由 PROVIDERS 派生，不再手工并列维护。

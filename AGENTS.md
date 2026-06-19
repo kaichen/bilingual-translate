@@ -34,6 +34,7 @@ entrypoints/
     trans.ts           # 翻译执行：悬停翻译、全文翻译(IntersectionObserver)、还原原文
     skip.ts            # 翻译相关 DOM 判定：skipNode / hasLoadingSpinner / searchClassName
     newApi.ts          # New API 配置预填（content 脚本里的 DOM 事件桥）
+    trigger.ts         # 悬停触发纯逻辑：parseHoverHotkey / eventMainKeyToken / isHoverMatch
     site-rules/        # 站点规则注册表：siteRules 单一真相源（index.ts 引擎 + 每站一文件）
   config/              # 配置域：config(响应式单例) · model(Config 类) · option(services/下拉) · config-check/check(校验)
   translate/           # 翻译管线：translateApi(入口) · translateQueue(并发队列) · cache · cache-key
@@ -41,8 +42,8 @@ entrypoints/
   ui/                  # 页面注入 UI：tip(toast) · icon(spinner/失败提示)
   offscreen/           # Chrome 内置 Translation API 的 offscreen 文档
   popup/               # 设置面板入口（App.tsx → Header/Main/Footer）
-  utils/               # 横切残余：messages(消息契约) · constant · common(throttle/语言检测) · hotkey · trigger · declare.d
-components/            # Preact 组件：Main、CustomHotkeyInput 等
+  utils/               # 横切残余：messages(消息契约) · common(throttle/语言检测/getCenterPoint) · constant · declare.d
+components/            # Preact 组件(Main/Header/Footer/CustomHotkeyInput) + hotkey.ts(快捷键解析/校验/预设)
 styles/ + entrypoints/style.css   # 主题变量与译文样式
 ```
 

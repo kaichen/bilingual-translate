@@ -5,7 +5,7 @@ import browser from 'webextension-polyfill';
 import { defaultOption, options, services } from '../entrypoints/config/option';
 import { models, providerOf, type Need } from '@/entrypoints/providers/registry';
 import { Config } from '@/entrypoints/config/model';
-import { parseHotkey } from '@/entrypoints/utils/hotkey';
+import { parseHotkey } from './hotkey';
 import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse } from '@/entrypoints/utils/messages';
 import CustomHotkeyInput from './CustomHotkeyInput';
 import './Main.css';

@@ -1,6 +1,6 @@
 // 鼠标悬停快捷键的纯触发逻辑（从 content.ts 提取，不 import config → 可单测）。
 //
-// 与 utils/hotkey.ts 区分：
+// 与 components/hotkey.ts 区分：
 // - hotkey.ts 处理 popup 设置的「组合动作键」(Alt+T)的解析/校验/显示，要求最后一段是普通键。
 // - 本文件处理内容脚本「按住修饰键悬停翻译」的持续按键追踪与精确匹配，**支持纯修饰键**(Control/Alt)。
 

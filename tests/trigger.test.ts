@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "../entrypoints/utils/trigger";
+import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "../entrypoints/main/trigger";
 
 // 悬停触发纯逻辑（从 content.ts 提取）的单测。trigger.ts 不 import config，故可直接 import 测试。
 

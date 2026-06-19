@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { parseHotkey, validateHotkeyConflicts, type ParsedHotkey } from '@/entrypoints/utils/hotkey';
+import { parseHotkey, validateHotkeyConflicts, type ParsedHotkey } from './hotkey';
 import './popup-components.css';
 
 interface CustomHotkeyInputProps {

@@ -6,7 +6,7 @@ import './style.css';
 import { config, configReady } from "@/entrypoints/config/config";
 import { cancelAllTranslations, translateText } from "@/entrypoints/translate/translateApi";
 import { mountNewApiComponent } from "@/entrypoints/main/newApi";
-import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/utils/trigger";
+import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/main/trigger";
 import { type ContentMessage, type BackgroundMessage } from "@/entrypoints/utils/messages";
 
 export default defineContentScript({
@@ -63,7 +63,7 @@ function setupManualTranslationTriggers() {
     const screen = { mouseX: 0, mouseY: 0, hotkeyPressed: false, otherKeyPressed: false, hasSlideTranslation: false };
     let mouseHotkeysPressed = new Set<string>();
     
-    // 悬停快捷键的解析/按键追踪/匹配纯逻辑见 utils/trigger.ts（parseHoverHotkey / eventMainKeyToken / isHoverMatch）
+    // 悬停快捷键的解析/按键追踪/匹配纯逻辑见 main/trigger.ts（parseHoverHotkey / eventMainKeyToken / isHoverMatch）
 
     // 1. 失去焦点时
     window.addEventListener('blur', () => {

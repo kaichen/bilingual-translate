@@ -12,6 +12,7 @@ interface IExtra {
 export class Config {
     on: boolean; // 是否开启
     autoTranslate: boolean; // 是否即时翻译
+    youtubeSubtitle: boolean; // 是否启用 YouTube 字幕翻译
     from: string;
     to: string;
     hotkey: string;
@@ -50,6 +51,7 @@ export class Config {
     constructor() {
         this.on = true;
         this.autoTranslate = false;
+        this.youtubeSubtitle = false;
         this.from = defaultOption.from;
         this.to = defaultOption.to;
         this.style = defaultOption.style;

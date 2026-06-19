@@ -1,8 +1,9 @@
-import { checkConfig, searchClassName, skipNode } from "../utils/check";
-import { cache } from "../utils/cache";
-import { options } from "../utils/option";
+import { checkConfig } from "../config/check";
+import { searchClassName, skipNode } from "./skip";
+import { cache } from "../translate/cache";
+import { options } from "../config/option";
 import { servicesType } from "@/entrypoints/providers/registry";
-import { insertFailedTip, insertLoadingSpinner } from "../utils/icon";
+import { insertFailedTip, insertLoadingSpinner } from "../ui/icon";
 import { styles } from "@/entrypoints/utils/constant";
 import {
     beautyHTML,
@@ -19,8 +20,8 @@ import {
 } from "@/entrypoints/main/dom";
 import { shouldSkipTranslation, throttle } from "@/entrypoints/utils/common";
 import { getMainDomain, getSiteRule } from "@/entrypoints/main/site-rules";
-import { config } from "@/entrypoints/utils/config";
-import { translateText, cancelAllTranslations } from '@/entrypoints/utils/translateApi';
+import { config } from "@/entrypoints/config/config";
+import { translateText, cancelAllTranslations } from '@/entrypoints/translate/translateApi';
 
 let hoverTimer: any; // 鼠标悬停计时器
 let htmlSet = new Set(); // 防抖

@@ -1,5 +1,5 @@
 import { method } from "../../utils/constant";
-import { config } from "@/entrypoints/utils/config";
+import { config } from "@/entrypoints/config/config";
 import { detectlang } from "../../utils/common";
 
 // 混元翻译大模型支持的语言代码映射

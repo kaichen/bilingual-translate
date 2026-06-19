@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validateConfig, type ConfigCheckSnapshot } from "../entrypoints/utils/config-check";
-import { services } from "../entrypoints/utils/option";
+import { validateConfig, type ConfigCheckSnapshot } from "../entrypoints/config/config-check";
+import { services } from "../entrypoints/config/option";
 
 const ok: ConfigCheckSnapshot = {
   service: services.openai,

@@ -1,5 +1,5 @@
 import { method } from "../../utils/constant";
-import { config } from "@/entrypoints/utils/config";
+import { config } from "@/entrypoints/config/config";
 import CryptoJS from 'crypto-js';
 
 interface YoudaoResponse {

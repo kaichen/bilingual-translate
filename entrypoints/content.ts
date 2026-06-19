@@ -1,11 +1,11 @@
 import { handleTranslation, autoTranslateEnglishPage, restoreOriginalContent } from "./main/trans";
-import { cache } from "./utils/cache";
+import { cache } from "./translate/cache";
 import { constants } from "@/entrypoints/utils/constant";
 import { getCenterPoint } from "@/entrypoints/utils/common";
 import './style.css';
-import { config, configReady } from "@/entrypoints/utils/config";
-import { cancelAllTranslations, translateText } from "@/entrypoints/utils/translateApi";
-import { mountNewApiComponent } from "@/entrypoints/utils/newApi";
+import { config, configReady } from "@/entrypoints/config/config";
+import { cancelAllTranslations, translateText } from "@/entrypoints/translate/translateApi";
+import { mountNewApiComponent } from "@/entrypoints/main/newApi";
 import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/utils/trigger";
 import { type ContentMessage, type BackgroundMessage } from "@/entrypoints/utils/messages";
 

@@ -1,8 +1,8 @@
 import {urls} from "@/entrypoints/providers/registry";
-import {services} from "../../utils/option";
-import {commonMsgTemplate} from "../../utils/template";
+import {services} from "../../config/option";
+import {commonMsgTemplate} from "./template";
 import CryptoJS from 'crypto-js';
-import {config} from "@/entrypoints/utils/config";
+import {config} from "@/entrypoints/config/config";
 import {chatCompletion} from "./chat";
 
 // 文档参考：https://open.bigmodel.cn/dev/api#nosdk

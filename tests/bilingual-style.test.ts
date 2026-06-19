@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SOURCE_KEY_ATTR } from "../entrypoints/main/dom";
 
-vi.mock("@/entrypoints/utils/cache", () => ({
+vi.mock("@/entrypoints/translate/cache", () => ({
   cache: {
     localGet: vi.fn(() => null),
     localSet: vi.fn(),
@@ -11,13 +11,13 @@ vi.mock("@/entrypoints/utils/cache", () => ({
   },
 }));
 
-vi.mock("@/entrypoints/utils/check", () => ({
+vi.mock("@/entrypoints/config/check", () => ({
   checkConfig: vi.fn(() => true),
   searchClassName: vi.fn(() => null),
   skipNode: vi.fn(() => false),
 }));
 
-vi.mock("@/entrypoints/utils/config", () => ({
+vi.mock("@/entrypoints/config/config", () => ({
   config: {
     on: true,
     display: 1,
@@ -32,12 +32,12 @@ vi.mock("@/entrypoints/utils/config", () => ({
   },
 }));
 
-vi.mock("@/entrypoints/utils/icon", () => ({
+vi.mock("@/entrypoints/ui/icon", () => ({
   insertFailedTip: vi.fn(),
   insertLoadingSpinner: vi.fn(() => ({ remove: vi.fn() })),
 }));
 
-vi.mock("@/entrypoints/utils/option", () => ({
+vi.mock("@/entrypoints/config/option", () => ({
   customModelString: "custom",
   options: {
     styles: [
@@ -60,7 +60,7 @@ vi.mock("@/entrypoints/utils/option", () => ({
   },
 }));
 
-vi.mock("@/entrypoints/utils/translateApi", () => ({
+vi.mock("@/entrypoints/translate/translateApi", () => ({
   cancelAllTranslations: vi.fn(),
   translateText: vi.fn(),
 }));

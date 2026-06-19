@@ -3,9 +3,8 @@
 // 详见 CONTEXT.md。本模块是 dispatch 脏层（import config），不追求单测。
 import { method } from "../../utils/constant";
 import { urls } from "@/entrypoints/providers/registry";
-import { customModelString, services } from "../../utils/option";
-import { config } from "@/entrypoints/utils/config";
-import { contentPostHandler } from "@/entrypoints/utils/check";
+import { customModelString, services } from "../../config/option";
+import { config } from "@/entrypoints/config/config";
 import {
     claudeMsgTemplate,
     commonMsgTemplate,
@@ -14,7 +13,7 @@ import {
     geminiMsgTemplate,
     minimaxTemplate,
     tongyiMsgTemplate,
-} from "../../utils/template";
+} from "./template";
 
 export interface RequestParts {
     url: string;
@@ -45,6 +44,11 @@ export const openaiRequest = (message: any): RequestParts => ({
     body: commonMsgTemplate(message.origin),
 });
 export const openaiResponse = (json: any): string => json.choices[0].message.content;
+
+// 剥离 <think>…</think> 推理段（response 后处理）
+function contentPostHandler(text: string): string {
+    return text.replace(/^<think>[\s\S]*?<\/think>/, "");
+}
 
 // adapter：拥有 transport + 错误 + contentPostHandler；变化点全走 hooks
 export async function chatCompletion(hooks: ChatHooks, message: any): Promise<string> {

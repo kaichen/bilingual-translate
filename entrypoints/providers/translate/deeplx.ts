@@ -1,6 +1,6 @@
 import {method} from "../../utils/constant";
-import {services} from "../../utils/option";
-import {config} from "@/entrypoints/utils/config";
+import {services} from "../../config/option";
+import {config} from "@/entrypoints/config/config";
 
 async function deeplx(message: any) {
     // deeplx 不支持 zh-Hans，需要转换为 zh

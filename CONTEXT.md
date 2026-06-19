@@ -4,7 +4,7 @@
 
 ## 翻译服务（Provider）
 
-一个可被选用的翻译来源——机器翻译引擎或 AI 大模型（claude、microsoft、google…）。名字常量集中在 `utils/option.ts` 的 `services`。
+一个可被选用的翻译来源——机器翻译引擎或 AI 大模型（claude、microsoft、google…）。名字常量集中在 `config/option.ts` 的 `services`。
 
 ## Provider 注册表（Provider Registry / PROVIDERS）
 

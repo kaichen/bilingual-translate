@@ -1,5 +1,5 @@
-import { config } from "@/entrypoints/utils/config";
-import {customModelString, services} from "@/entrypoints/utils/option";
+import { config } from "@/entrypoints/config/config";
+import {customModelString, services} from "@/entrypoints/config/option";
 import { storage } from '@wxt-dev/storage';
 
 let containerEl: HTMLElement | null = null;

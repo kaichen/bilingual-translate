@@ -1,4 +1,4 @@
-import { config } from "@/entrypoints/utils/config";
+import { config } from "@/entrypoints/config/config";
 import { buildKey, CACHE_PREFIX } from "./cache-key";
 
 // key 拼接逻辑（纯）在 cache-key.ts；这里把 config 单例的相关字段喂进去

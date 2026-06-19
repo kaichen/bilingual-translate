@@ -4,7 +4,7 @@ import {
   enqueueTranslation,
   canAcceptMoreTasks,
   clearTranslationQueue,
-} from "../entrypoints/utils/translateQueue";
+} from "../entrypoints/translate/translateQueue";
 
 // translateQueue 不再 import config（并发上限经 configureQueue 注入）→ 可直接单测。
 

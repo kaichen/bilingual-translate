@@ -1,4 +1,4 @@
-import { Config } from "@/entrypoints/utils/model";
+import { Config } from "@/entrypoints/config/model";
 
 // 声明 config 类型, new Config() 会设置好所有默认值
 export let config: Config = new Config();

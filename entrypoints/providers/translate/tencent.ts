@@ -1,6 +1,6 @@
 import { method } from "../../utils/constant";
-import { services } from "../../utils/option";
-import { config } from "@/entrypoints/utils/config";
+import { services } from "../../config/option";
+import { config } from "@/entrypoints/config/config";
 
 // 腾讯云机器翻译语言代码映射
 const languageMap: Record<string, string> = {

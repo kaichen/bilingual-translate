@@ -5,9 +5,9 @@
 
 import { enqueueTranslation, clearTranslationQueue, configureQueue } from './translateQueue';
 import browser from 'webextension-polyfill';
-import { config } from './config';
+import { config } from '../config/config';
 import { cache } from './cache';
-import { shouldSkipTranslation } from './common';
+import { shouldSkipTranslation } from '../utils/common';
 import { storage } from '@wxt-dev/storage';
 
 // 调试相关

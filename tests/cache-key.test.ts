@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildKey, CACHE_PREFIX, type CacheKeyParams } from "../entrypoints/utils/cache-key";
-import { customModelString, services } from "../entrypoints/utils/option";
+import { buildKey, CACHE_PREFIX, type CacheKeyParams } from "../entrypoints/translate/cache-key";
+import { customModelString, services } from "../entrypoints/config/option";
 
 const base: CacheKeyParams = {
   service: services.openai,

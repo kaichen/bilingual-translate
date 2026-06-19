@@ -1,6 +1,6 @@
 // 消息模板工具
-import {customModelString, defaultOption, services} from "./option";
-import {config} from "@/entrypoints/utils/config";
+import {customModelString, defaultOption, services} from "../../config/option";
+import {config} from "@/entrypoints/config/config";
 
 // openai 格式的消息模板（通用模板）
 export function commonMsgTemplate(origin: string) {

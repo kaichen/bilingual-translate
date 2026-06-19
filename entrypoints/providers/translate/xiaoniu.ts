@@ -1,7 +1,7 @@
 import {method} from "../../utils/constant";
 import {urls} from "@/entrypoints/providers/registry";
-import {services} from "../../utils/option";
-import {config} from "@/entrypoints/utils/config";
+import {services} from "../../config/option";
+import {config} from "@/entrypoints/config/config";
 
 async function xiaoniu(message: any) {
     // 根据需要调整目标语言

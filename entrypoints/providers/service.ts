@@ -1,4 +1,4 @@
-import {services} from "../utils/option";
+import {services} from "../config/option";
 import microsoft from "./translate/microsoft";
 import deepl from "./translate/deepl";
 import deeplx from "./translate/deeplx";

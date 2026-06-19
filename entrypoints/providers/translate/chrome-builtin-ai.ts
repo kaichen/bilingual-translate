@@ -1,4 +1,4 @@
-import { config } from "@/entrypoints/utils/config";
+import { config } from "@/entrypoints/config/config";
 
 /**
  * Chrome 内置翻译 API 服务

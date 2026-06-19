@@ -59,18 +59,3 @@ export function getCenterPoint(touches: TouchList, point: number): { x: number, 
 
     return {x: centerX, y: centerY};
 }
-
-// 按 selector 查找匹配的元素，返回匹配的元素或 false
-export function findMatchingElement(element: Element, selector: string): Element | false {
-    // 检查当前元素是否匹配传入的选择器
-    if (element.matches(selector)) return element;
-
-    // 遍历父元素，直到找到匹配的元素或没有父元素
-    let parent = element.parentElement;
-    while (parent) {
-        if (parent.matches(selector)) return parent;
-        parent = parent.parentElement;
-    }
-
-    return false; // 未找到匹配元素
-}

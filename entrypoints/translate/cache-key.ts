@@ -1,4 +1,4 @@
-import { customModelString } from "./option";
+import { customModelString } from "../config/option";
 
 // 翻译缓存 key 前缀（与 cache.clean 共用，避免误删非翻译缓存）
 export const CACHE_PREFIX = "btcache_";

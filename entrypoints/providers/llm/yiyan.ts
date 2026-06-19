@@ -1,7 +1,7 @@
-import {services} from "../../utils/option";
-import {yiyanMsgTemplate} from "../../utils/template";
+import {services} from "../../config/option";
+import {yiyanMsgTemplate} from "./template";
 import {method} from "../../utils/constant";
-import {config} from "@/entrypoints/utils/config";
+import {config} from "@/entrypoints/config/config";
 import {chatCompletion} from "./chat";
 
 // ERNIE-Bot 4.0 模型，模型定价页面：https://console.bce.baidu.com/qianfan/chargemanage/list

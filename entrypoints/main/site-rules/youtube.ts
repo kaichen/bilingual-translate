@@ -24,7 +24,7 @@ export const youtubeRule: SiteRule = {
         "span.captions-text",
         "yt-formatted-string",
     ],
-    ignoreSelector: "aside, button, footer, form, header, pre, mark, nav, #player, #container, .caption-window, .ytp-settings-menu, #kiss-youtube-subtitle-list-container",
+    ignoreSelector: "aside, button, footer, form, header, pre, mark, nav, #player, #container, .caption-window, .ytp-settings-menu, #kiss-youtube-subtitle-list-container, #fl-youtube-subtitle",
     selectStyle: DEFAULT_SELECT_STYLE,
     parentStyle: DEFAULT_SELECT_STYLE,
     grandStyle: DEFAULT_SELECT_STYLE,

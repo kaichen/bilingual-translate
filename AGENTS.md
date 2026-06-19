@@ -29,12 +29,14 @@
 entrypoints/
   background.ts        # Service Worker：右键菜单、状态机、消息路由、跨上下文请求
   content.ts           # 内容脚本：注册所有翻译触发器、挂载页面功能
+  youtube-timedtext-hook.content.ts  # world:'MAIN' 入口：patch XHR/fetch 抓 YouTube timedtext → postMessage 桥
   main/
     dom.ts             # 节点抓取核心：grabNode / grabAllNode，块级/内联/跳过判定
     trans.ts           # 翻译执行：悬停翻译、全文翻译(IntersectionObserver)、还原原文
     skip.ts            # 翻译相关 DOM 判定：skipNode / hasLoadingSpinner / searchClassName
     newApi.ts          # New API 配置预填（content 脚本里的 DOM 事件桥）
     trigger.ts         # 悬停触发纯逻辑：parseHoverHotkey / eventMainKeyToken / isHoverMatch
+    youtube-subtitle.ts # YouTube 字幕翻译：json3 解析/去重 → translateText → 双语浮层 → 跟随原生 CC
     site-rules/        # 站点规则注册表：siteRules 单一真相源（index.ts 引擎 + 每站一文件）
   config/              # 配置域：config(响应式单例) · model(Config 类) · option(services/下拉) · config-check/check(校验)
   translate/           # 翻译管线：translateApi(入口) · translateQueue(并发队列) · cache · cache-key

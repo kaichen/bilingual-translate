@@ -4,8 +4,9 @@ import { constants } from "@/entrypoints/utils/constant";
 import { getCenterPoint } from "@/entrypoints/utils/common";
 import './style.css';
 import { config, configReady } from "@/entrypoints/config/config";
-import { cancelAllTranslations, translateText } from "@/entrypoints/translate/translateApi";
+import { cancelAllTranslations } from "@/entrypoints/translate/translateApi";
 import { mountNewApiComponent } from "@/entrypoints/main/newApi";
+import { mountYouTubeSubtitleTranslation } from "@/entrypoints/main/youtube-subtitle";
 import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/main/trigger";
 import { type ContentMessage, type BackgroundMessage } from "@/entrypoints/utils/messages";
 
@@ -20,6 +21,7 @@ export default defineContentScript({
         if (config.autoTranslate) autoTranslationEvent();
         
         mountNewApiComponent();
+        mountYouTubeSubtitleTranslation();
 
         cache.cleaner();    // 检测是否清理缓存
 

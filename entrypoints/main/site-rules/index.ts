@@ -1,14 +1,15 @@
 // 兼容部分网站独特的 DOM 结构
 
-import {findMatchingElement} from "@/entrypoints/utils/common";
 import {githubRule} from "./github";
 import {hackerNewsRule} from "./hacker-news";
+import {mediumRule} from "./medium";
 import {redditRule} from "./reddit";
 import {debugLog} from "./shared";
+import {stackOverflowRule} from "./stackoverflow";
 import {xRule} from "./x";
 import {youtubeLiveChatRule, youtubeRule} from "./youtube";
 
-export interface SiteCompatRule {
+export interface SiteRule {
     pattern: string;
     // 按序匹配：每项可为逗号串（任一最近祖先），项间按优先级先到先得。
     // 统一吸收旧 selector 逗号串与旧 selectCompatFn 的 findMatchingElement 链。
@@ -36,7 +37,7 @@ const DEFAULT_IGNORE_SELECTOR = "button, footer, pre, mark, nav, svg, img[src*='
 
 // 站点规则注册表（单一真相源）。selector 为数组时：首项是全局批量扫描选择器，
 // 整个数组是 hover 单节点上卷链（按序优先）。命令式跳过走 skipNode，译文回填走 replace。
-export const siteCompatRules: SiteCompatRule[] = [
+export const siteRules: SiteRule[] = [
     {
         pattern: "en.wikipedia.org",
         ignoreSelector: ".button, code, footer, form, mark, pre, .mwe-math-element, .mw-editsection",
@@ -65,31 +66,8 @@ export const siteCompatRules: SiteCompatRule[] = [
         pattern: "webtrees.net",
         selector: "div.kmsg",
     },
-    {
-        pattern: "stackoverflow.com",
-        selector: [
-            "h1.question-hyperlink",
-            "div.excerpt",
-            "div.question-status",
-            "div.profile-about",
-            "div.s-notice",
-        ],
-        skipNode: shouldSkipStackOverflowElement,
-    },
-    {
-        pattern: "medium.com",
-        selector: [
-            "h1",
-            "h2",
-            "p",
-            "li",
-            "blockquote",
-            "article section",
-            "p.pw-author-note",
-            "div.pw-responses-thread p",
-        ],
-        skipNode: shouldSkipMediumElement,
-    },
+    stackOverflowRule,
+    mediumRule,
 ];
 
 function getUrlParts(href: string = location.href): {href: string; hostname: string; pathname: string} {
@@ -109,7 +87,7 @@ function getUrlParts(href: string = location.href): {href: string; hostname: str
     }
 }
 
-function matchRulePattern(rule: SiteCompatRule, href: string): boolean {
+function matchRulePattern(rule: SiteRule, href: string): boolean {
     const url = getUrlParts(href);
     const domain = getMainDomain(href);
 
@@ -127,8 +105,8 @@ function matchRulePattern(rule: SiteCompatRule, href: string): boolean {
     });
 }
 
-export function getSiteCompatRule(href: string = location.href): SiteCompatRule | undefined {
-    return siteCompatRules.find(rule => matchRulePattern(rule, href));
+export function getSiteRule(href: string = location.href): SiteRule | undefined {
+    return siteRules.find(rule => matchRulePattern(rule, href));
 }
 
 function isSelectorRoot(node: Node): node is Element | Document | DocumentFragment {
@@ -172,7 +150,7 @@ function appendCssText(node: Element | null | undefined, cssText?: string): void
     node.style.cssText = `${existing}${existing.trim().endsWith(";") || !existing.trim() ? "" : ";"}${cssText}`;
 }
 
-export function applySiteRuleStyles(node: Element, rule: SiteCompatRule | undefined = getSiteCompatRule()): Element {
+export function applySiteRuleStyles(node: Element, rule: SiteRule | undefined = getSiteRule()): Element {
     if (!rule) return node;
 
     appendCssText(node, rule.selectStyle);
@@ -182,7 +160,7 @@ export function applySiteRuleStyles(node: Element, rule: SiteCompatRule | undefi
     return node;
 }
 
-export function isIgnoredBySiteRule(node: Element, rule: SiteCompatRule | undefined = getSiteCompatRule()): boolean {
+export function isIgnoredBySiteRule(node: Element, rule: SiteRule | undefined = getSiteRule()): boolean {
     const selector = [
         DEFAULT_IGNORE_SELECTOR,
         rule?.ignoreSelector,
@@ -191,7 +169,7 @@ export function isIgnoredBySiteRule(node: Element, rule: SiteCompatRule | undefi
     return Boolean(safeClosest(node, selector));
 }
 
-export function getSiteRuleRoots(rootNode: Node, rule: SiteCompatRule | undefined = getSiteCompatRule()): Element[] {
+export function getSiteRuleRoots(rootNode: Node, rule: SiteRule | undefined = getSiteRule()): Element[] {
     if (!isSelectorRoot(rootNode)) return [];
     if (!rule?.rootsSelector?.trim()) {
         return rootNode instanceof Element ? [rootNode] : Array.from(rootNode.children);
@@ -215,18 +193,18 @@ export function getSiteRuleRoots(rootNode: Node, rule: SiteCompatRule | undefine
     return Array.from(roots);
 }
 
-export function isWithinSiteRuleRoots(node: Element, rule: SiteCompatRule | undefined = getSiteCompatRule()): boolean {
+export function isWithinSiteRuleRoots(node: Element, rule: SiteRule | undefined = getSiteRule()): boolean {
     if (!rule?.rootsSelector?.trim()) return true;
     return safeMatches(node, rule.rootsSelector) || Boolean(safeClosest(node, rule.rootsSelector));
 }
 
-export function isWithinSiteRuleSelector(node: Element, rule: SiteCompatRule): boolean {
+export function isWithinSiteRuleSelector(node: Element, rule: SiteRule): boolean {
     const selector = selectorList(rule.selector)[0];   // 全局选择器（数组首项）
     if (!selector) return true;
     return safeMatches(node, selector) || Boolean(safeClosest(node, selector));
 }
 
-function getSiteRuleSegments(node: Element, rule: SiteCompatRule): Element[] {
+function getSiteRuleSegments(node: Element, rule: SiteRule): Element[] {
     if (!rule.segmentSelector?.trim()) return [];
 
     const segments = new Set<Element>();
@@ -242,7 +220,7 @@ function getSiteRuleSegments(node: Element, rule: SiteCompatRule): Element[] {
         .filter(segment => !Array.from(segments).some(other => other !== segment && segment.contains(other)));
 }
 
-function addSiteRuleNode(nodes: Set<Element>, node: Element, rule: SiteCompatRule): void {
+function addSiteRuleNode(nodes: Set<Element>, node: Element, rule: SiteRule): void {
     const segments = getSiteRuleSegments(node, rule);
 
     if (segments.length) {
@@ -255,7 +233,7 @@ function addSiteRuleNode(nodes: Set<Element>, node: Element, rule: SiteCompatRul
     }
 }
 
-export function querySiteRuleNodes(rootNode: Node, rule: SiteCompatRule | undefined = getSiteCompatRule()): Element[] {
+export function querySiteRuleNodes(rootNode: Node, rule: SiteRule | undefined = getSiteRule()): Element[] {
     if (!rule) return [];
     // 全局批量扫描只用首项选择器；多项数组的其余项是 hover 单节点上卷链，不在此泄漏
     const selector = selectorList(rule.selector)[0];
@@ -288,7 +266,7 @@ export function querySiteRuleNodes(rootNode: Node, rule: SiteCompatRule | undefi
     return Array.from(nodes);
 }
 
-export function selectSiteRuleNode(node: Element, rule: SiteCompatRule | undefined = getSiteCompatRule()): Element | {skip: boolean} | false {
+export function selectSiteRuleNode(node: Element, rule: SiteRule | undefined = getSiteRule()): Element | {skip: boolean} | false {
     if (!rule) return false;
 
     // 命令式跳过逃生舱（原 selectCompatFn 内联的 shouldSkip*），仅此单节点路径生效
@@ -372,129 +350,4 @@ export function getMainDomain(url: any) {
         console.error('getMainDomain error:', error);
         return '';
     }
-}
-
-/**
- * 判断是否应该跳过Stack Overflow网站上的特定元素
- */
-function shouldSkipStackOverflowElement(node: any): boolean {
-    // 如果当前节点或其祖先节点匹配这些选择器，则跳过
-    const skipSelectors = [
-        // 导航栏
-        'nav.s-topbar',
-        'div.s-topbar',
-        // 侧边栏
-        'div.s-sidebarwidget',
-        // 表单元素
-        'form',
-        'input',
-        'textarea',
-        'button',
-        // 代码块
-        'pre.s-code-block',
-        'code',
-        // 操作按钮
-        'div.js-voting-container',
-        'div.js-post-menu',
-        // 链接和标签
-        'div.post-taglist',
-        'div.module.community-bulletin',
-        // 统计信息
-        'div.-flair',
-        'div.s-stats',
-        'div.s-badge',
-        // 页脚
-        'footer',
-        'div.site-footer',
-    ];
-    
-    // 检查当前节点是否匹配跳过选择器
-    for (const selector of skipSelectors) {
-        if (node.matches?.(selector)) return true;
-        
-        // 检查祖先节点
-        let parent = node.parentElement;
-        while (parent) {
-            if (parent.matches?.(selector)) return true;
-            parent = parent.parentElement;
-        }
-    }
-    
-    // 检查节点的类名是否包含特定关键字
-    const skipClassKeywords = ['js-', 'icon', 'btn', 'badge', 'vote', 'tag', 's-btn', 'vote-count'];
-    
-    if (node.className && typeof node.className === 'string') {
-        for (const keyword of skipClassKeywords) {
-            if (node.className.includes(keyword)) return true;
-        }
-    }
-    
-    // 忽略代码片段
-    if (node.tagName?.toLowerCase() === 'pre' || node.tagName?.toLowerCase() === 'code') return true;
-    
-    // 忽略图标
-    if (node.tagName?.toLowerCase() === 'svg') return true;
-    
-    return false;
-}
-
-/**
- * 判断是否应该跳过Medium网站上的特定元素
- */
-function shouldSkipMediumElement(node: any): boolean {
-    // 如果当前节点或其祖先节点匹配这些选择器，则跳过
-    const skipSelectors = [
-        // 导航栏和工具栏
-        'nav',
-        'div.metabar',
-        'div.js-metabar',
-        // 侧边栏 
-        'div.js-sidebarContainer',
-        'div.js-sidebar',
-        // UI元素
-        'button',
-        'input',
-        'textarea',
-        // 代码块
-        'pre',
-        'code',
-        // 底部元素
-        'footer',
-        // 作者资料卡
-        'div.pw-multi-author-card',
-        // 推荐文章卡片上的标题/描述以外的内容
-        'div.pw-card-body div.pw-card-description ~ *',
-        // 分享按钮和响应按钮
-        'div.pw-post-actions',
-        'div.pw-responses-header',
-    ];
-    
-    // 检查当前节点是否匹配跳过选择器
-    for (const selector of skipSelectors) {
-        if (node.matches?.(selector)) return true;
-        
-        // 检查祖先节点
-        let parent = node.parentElement;
-        while (parent) {
-            if (parent.matches?.(selector)) return true;
-            parent = parent.parentElement;
-        }
-    }
-    
-    // 检查节点的类名是否包含特定关键字
-    const skipClassKeywords = ['js-', 'btn', 'button', 'u-', 'overlay', 'postActionsBar'];
-    
-    if (node.className && typeof node.className === 'string') {
-        for (const keyword of skipClassKeywords) {
-            if (node.className.includes(keyword)) return true;
-        }
-    }
-    
-    // 忽略代码片段
-    if (node.tagName?.toLowerCase() === 'pre' || node.tagName?.toLowerCase() === 'code') return true;
-    
-    // 忽略图片图标
-    if (node.tagName?.toLowerCase() === 'svg' || node.tagName?.toLowerCase() === 'img') return true;
-    
-    return false;
 }

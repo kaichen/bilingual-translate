@@ -1,4 +1,4 @@
-import type {SiteCompatRule} from "./index";
+import type {SiteRule} from "./index";
 
 const REDDIT_CONTENT_SELECTOR = [
     "shreddit-post h1",
@@ -48,7 +48,7 @@ const REDDIT_IGNORE_SELECTOR = [
     "[data-before-content='advertisement']",
 ].join(", ");
 
-export const redditRule: SiteCompatRule = {
+export const redditRule: SiteRule = {
     // reddit 现状走 querySiteRuleNodes 数据路径（原 preferRule 短路了 selectCompatFn），
     // 故迁移后不挂 skipNode，行为等价；shouldSkipRedditElement 随 selectCompatFn 删除。
     pattern: "reddit.com",

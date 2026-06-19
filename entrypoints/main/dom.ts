@@ -1,12 +1,12 @@
 import {
     applySiteRuleStyles,
     getMainDomain,
-    getSiteCompatRule,
+    getSiteRule,
     getSiteRuleRoots,
     isIgnoredBySiteRule,
     querySiteRuleNodes,
     selectSiteRuleNode
-} from "@/entrypoints/main/compat";
+} from "@/entrypoints/main/site-rules";
 import { html } from 'js-beautify';
 import { handleBtnTranslation } from "@/entrypoints/main/trans";
 
@@ -167,7 +167,7 @@ function getRawTranslatableElements(rootNode: Node): Element[] {
     if (!rootNode) return [];
 
     const result: Element[] = [];
-    const siteRule = getSiteCompatRule(location.href);
+    const siteRule = getSiteRule(location.href);
 
     if (siteRule?.autoScan === false) {
         return querySiteRuleNodes(rootNode, siteRule).filter(node => {
@@ -397,7 +397,7 @@ export function grabNode(node: any): any {
     if (shouldSkipNode(node, curTag)) return false;
 
     // 站点规则统一分发：skipNode/ignore 判跳过 → select[] 按序上卷 → applyStyles（单路，原双路 + selectCompatFn + preferRule 已合并）
-    const siteRule = getSiteCompatRule(location.href);
+    const siteRule = getSiteRule(location.href);
     const siteRuleResult = selectSiteRuleNode(node, siteRule);
     if (siteRuleResult && typeof siteRuleResult === 'object' && 'skip' in siteRuleResult && siteRuleResult.skip === true) {
         return false;

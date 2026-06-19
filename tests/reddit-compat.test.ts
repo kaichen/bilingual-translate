@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  getSiteCompatRule,
+  getSiteRule,
   querySiteRuleNodes,
   selectSiteRuleNode,
-  type SiteCompatRule,
-} from "../entrypoints/main/compat";
+  type SiteRule,
+} from "../entrypoints/main/site-rules";
 import { collectTranslationTargets, grabAllNode, grabNode } from "../entrypoints/main/dom";
 
 vi.mock("@/entrypoints/main/trans", () => ({
@@ -13,10 +13,10 @@ vi.mock("@/entrypoints/main/trans", () => ({
 
 const redditUrl = "https://www.reddit.com/r/ChineseLanguage/comments/11l7b6r/chinese_is_the_easiest_language_in_the_world_and/";
 
-function redditRule(): SiteCompatRule {
-  const rule = getSiteCompatRule(redditUrl);
+function redditRule(): SiteRule {
+  const rule = getSiteRule(redditUrl);
   expect(rule).toBeDefined();
-  return rule as SiteCompatRule;
+  return rule as SiteRule;
 }
 
 function normalizeText(node: Element): string {

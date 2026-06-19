@@ -1,6 +1,6 @@
-import type {SiteCompatRule} from "./index";
+import type {SiteRule} from "./index";
 
-export const hackerNewsRule: SiteCompatRule = {
+export const hackerNewsRule: SiteRule = {
     pattern: "news.ycombinator.com",
     selector: [
         "p, .titleline, .commtext, .hn-item-title, .hn-comment-text, .hn-story-title",

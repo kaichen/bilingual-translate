@@ -1,7 +1,7 @@
-import type {SiteCompatRule} from "./index";
+import type {SiteRule} from "./index";
 import {DEFAULT_SELECT_STYLE, debugLog, isSpecialContent} from "./shared";
 
-export const xRule: SiteCompatRule = {
+export const xRule: SiteRule = {
     pattern: "twitter.com, x.com",
     selector: "[data-testid='tweetText'], [data-testid='twitter-article-title'], [data-testid='UserDescription']",
     ignoreSelector: "header, nav, [role='button'], [data-testid='videoPlayer'], [data-testid^='tweetTextarea'], [data-testid='sidebarColumn'], [data-testid='tweetTextarea_0'], [data-testid='User-Name'], [data-testid='UserName'], [data-testid='reply'], [data-testid='retweet'], [data-testid='like'], [data-testid='bookmark'], [data-testid='share'], [data-testid='caret'], [data-testid='app-bar-close'], [aria-label='Timeline: Trending now'], [aria-label='Who to follow']",

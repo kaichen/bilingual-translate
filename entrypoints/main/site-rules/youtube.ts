@@ -1,16 +1,16 @@
-import type {SiteCompatRule} from "./index";
+import type {SiteRule} from "./index";
 import {DEFAULT_SELECT_STYLE, debugLog, isSpecialContent} from "./shared";
 
 const parser = new DOMParser();
 
-export const youtubeLiveChatRule: SiteCompatRule = {
+export const youtubeLiveChatRule: SiteRule = {
     pattern: "www.youtube.com/live_chat",
     rootsSelector: "div#items",
     selector: "span.yt-live-chat-text-message-renderer",
     autoScan: false,
 };
 
-export const youtubeRule: SiteCompatRule = {
+export const youtubeRule: SiteRule = {
     pattern: "youtube.com",
     rootsSelector: "ytd-page-manager",
     selector: [

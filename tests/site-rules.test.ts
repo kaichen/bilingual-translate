@@ -1,43 +1,43 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  getSiteCompatRule,
+  getSiteRule,
   querySiteRuleNodes,
   selectSiteRuleNode,
-  siteCompatRules,
-  type SiteCompatRule,
-} from "../entrypoints/main/compat";
+  siteRules,
+  type SiteRule,
+} from "../entrypoints/main/site-rules";
 
 // 站点规则注册表迁移的黄金快照：锁定 selectCompatFn → 数据(select[]) + skipNode/replace 逃生舱的等价行为。
 // 现有 reddit-compat / x-compat 已覆盖 reddit/x；本文件补迁移改动最大的其余站点。
 
-function ruleFor(url: string): SiteCompatRule {
-  const rule = getSiteCompatRule(url);
+function ruleFor(url: string): SiteRule {
+  const rule = getSiteRule(url);
   expect(rule).toBeDefined();
-  return rule as SiteCompatRule;
+  return rule as SiteRule;
 }
 
 describe("site-rule registry — 注册表数据不变量", () => {
   it("pattern 在所有规则间唯一", () => {
-    const patterns = siteCompatRules.map(r => r.pattern);
+    const patterns = siteRules.map(r => r.pattern);
     expect(patterns.length).toBe(new Set(patterns).size);
   });
 
   it("迁移新增的纯 selectCompatFn 站点都已进注册表", () => {
-    const hosts = siteCompatRules.flatMap(r => r.pattern.split(",").map(s => s.trim()));
+    const hosts = siteRules.flatMap(r => r.pattern.split(",").map(s => s.trim()));
     for (const host of ["mvnrepository.com", "aozora.gr.jp", "webtrees.net", "stackoverflow.com", "medium.com"]) {
       expect(hosts).toContain(host);
     }
   });
 
   it("youtube 保留 replace（译文回填）+ skipNode（控制区跳过）两个逃生舱", () => {
-    const yt = getSiteCompatRule("https://www.youtube.com/watch?v=abc");
+    const yt = getSiteRule("https://www.youtube.com/watch?v=abc");
     expect(typeof yt?.replace).toBe("function");
     expect(typeof yt?.skipNode).toBe("function");
   });
 
   it("HN / github 保留 skipNode 逃生舱", () => {
-    expect(typeof getSiteCompatRule("https://news.ycombinator.com/item?id=1")?.skipNode).toBe("function");
-    expect(typeof getSiteCompatRule("https://github.com/owner/repo")?.skipNode).toBe("function");
+    expect(typeof getSiteRule("https://news.ycombinator.com/item?id=1")?.skipNode).toBe("function");
+    expect(typeof getSiteRule("https://github.com/owner/repo")?.skipNode).toBe("function");
   });
 });
 

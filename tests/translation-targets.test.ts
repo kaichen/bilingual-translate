@@ -6,6 +6,7 @@ import {
   grabAllNode,
   grabTranslationTarget,
   insertTranslationNodeForTarget,
+  isPageChromeHeaderFooter,
 } from "../entrypoints/main/dom";
 
 vi.mock("@/entrypoints/main/trans", () => ({
@@ -152,5 +153,24 @@ describe("translation target normalization", () => {
     expect(paragraph.textContent.length).toBeGreaterThan(4096);
     expect(collectTranslationTargets(document.body)).toEqual([]);
     expect(grabAllNode(document.body)).toEqual([]);
+  });
+
+  it("treats only non-article <header>/<footer> as page chrome to skip (article 内的放行)", () => {
+    document.body.innerHTML = `
+      <header class="site-header"><nav>nav</nav></header>
+      <article>
+        <header class="article-header"><h1>Article title</h1></header>
+        <footer class="article-footer">作者信息</footer>
+      </article>
+      <footer class="site-footer">© 2026</footer>
+    `;
+    const q = (sel: string) => document.querySelector(sel) as Element;
+
+    // 站点级页眉/页脚 → 视为 chrome，整棵跳过
+    expect(isPageChromeHeaderFooter(q("header.site-header"))).toBe(true);
+    expect(isPageChromeHeaderFooter(q("footer.site-footer"))).toBe(true);
+    // 文章内语义 header/footer → 放行（其内的标题 h1 等得以翻译，正是本次修复点）
+    expect(isPageChromeHeaderFooter(q("header.article-header"))).toBe(false);
+    expect(isPageChromeHeaderFooter(q("footer.article-footer"))).toBe(false);
   });
 });

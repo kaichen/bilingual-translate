@@ -163,6 +163,12 @@ export function insertTranslationNodeForTarget(target: TranslationTarget, transl
     target.anchor.parentNode?.insertBefore(translationNode, target.anchor.nextSibling);
 }
 
+// 站点级页眉/页脚（顶部导航、版权等）整棵跳过；文章内的语义 <header>/<footer>（含标题等内容）不算 chrome，放行翻译。
+export function isPageChromeHeaderFooter(node: Element): boolean {
+    const tag = node.tagName.toLowerCase();
+    return (tag === 'header' || tag === 'footer') && !node.closest('article');
+}
+
 function getRawTranslatableElements(rootNode: Node): Element[] {
     if (!rootNode) return [];
 
@@ -199,8 +205,8 @@ function getRawTranslatableElements(rootNode: Node): Element[] {
                         return NodeFilter.FILTER_REJECT;
                     }
 
-                    // 在初始全局翻译时 跳过header与footer
-                    if (tag === 'header' || tag === 'footer') {
+                    // 站点级页眉/页脚整棵跳过；文章内语义 <header>/<footer> 放行（含标题 h1 等内容）
+                    if (isPageChromeHeaderFooter(node)) {
                         return NodeFilter.FILTER_REJECT;
                     }
 

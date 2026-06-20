@@ -129,7 +129,7 @@ export const options = {
     styles: [
         // 基础样式
         {value: "basic", label: "基础样式", disabled: true},
-        {value: 0, label: "朴素模式", class: "bilingual-display-default", group: "basic"},
+        {value: 0, label: "无样式", class: "bilingual-display-default", group: "basic"},
         {value: 1, label: "加粗显示", class: "bilingual-display-bold", group: "basic"},
 
         // 下划线系列

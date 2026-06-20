@@ -768,6 +768,16 @@ function appendBilingualTranslationForTarget(target: TranslationTarget, text: st
     insertTranslationNodeForTarget(target, newNode);
 }
 
+// config.style 对应的展示样式 class（无样式/未匹配则 undefined）
+function styleClassOf(styleValue: number | string): string | undefined {
+    return options.styles.find(s => s.value === styleValue && !s.disabled)?.class;
+}
+
+// 所有可能的展示样式 class，动态切换时先清除旧类
+const ALL_DISPLAY_CLASSES: string[] = options.styles
+    .map(s => s.class)
+    .filter((c): c is string => typeof c === "string");
+
 export function createBilingualContentNode(text: string): HTMLElement {
     const newNode = document.createElement("span");
     newNode.classList.add("bilingual-translate-bilingual-content");
@@ -775,12 +785,19 @@ export function createBilingualContentNode(text: string): HTMLElement {
     const textNode = document.createElement("span");
     textNode.classList.add("bilingual-translate-bilingual-text");
 
-    // find the style
-    const style = options.styles.find(s => s.value === config.style && !s.disabled);
-    if (style?.class) {
-        textNode.classList.add(style.class);
-    }
+    const cls = styleClassOf(config.style);
+    if (cls) textNode.classList.add(cls);
+
     textNode.append(text);
     newNode.append(textNode);
     return newNode;
+}
+
+// 动态切换译文样式：把页面上已有译文节点换成指定样式，无需重译
+export function restyleTranslations(styleValue: number | string): void {
+    const cls = styleClassOf(styleValue);
+    document.querySelectorAll<HTMLElement>(".bilingual-translate-bilingual-text").forEach(el => {
+        el.classList.remove(...ALL_DISPLAY_CLASSES);
+        if (cls) el.classList.add(cls);
+    });
 }

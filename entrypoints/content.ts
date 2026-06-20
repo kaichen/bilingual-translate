@@ -1,4 +1,4 @@
-import { handleTranslation, autoTranslateEnglishPage, restoreOriginalContent } from "./main/trans";
+import { handleTranslation, autoTranslateEnglishPage, restoreOriginalContent, restyleTranslations } from "./main/trans";
 import { cache } from "./translate/cache";
 import { constants } from "@/entrypoints/utils/constant";
 import { getCenterPoint } from "@/entrypoints/utils/common";
@@ -22,6 +22,15 @@ export default defineContentScript({
         
         mountNewApiComponent();
         mountYouTubeSubtitleTranslation();
+
+        // 译文样式动态切换：popup 改样式后，实时重刷页面已有译文节点（无需重译）
+        storage.watch('local:config', (newValue: any, oldValue: any) => {
+            try {
+                const next = typeof newValue === 'string' ? JSON.parse(newValue) : newValue;
+                const prev = typeof oldValue === 'string' ? JSON.parse(oldValue) : oldValue;
+                if (next && next.style !== prev?.style) restyleTranslations(next.style);
+            } catch { /* 忽略解析失败 */ }
+        });
 
         cache.cleaner();    // 检测是否清理缓存
 

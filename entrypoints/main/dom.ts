@@ -45,20 +45,12 @@ export const inlineSet = new Set([
 export const SOURCE_KEY_ATTR = 'data-bt-source-key';
 const TRANSLATED_ATTR = 'data-bt-translated';
 const TRANSLATED_ID_ATTR = 'data-bt-node-id';
-const LEGACY_SOURCE_KEY_ATTR = 'data-fr-source-key';
-const LEGACY_TRANSLATED_ATTR = 'data-fr-translated';
-const LEGACY_TRANSLATED_ID_ATTR = 'data-fr-node-id';
 const TRANSLATION_UI_SELECTOR = [
     '.bilingual-translate-bilingual-content',
     '.bilingual-translate-bilingual-text',
     '.bilingual-translate-loading',
     '.bilingual-translate-retry-wrapper',
     '.bilingual-translate-failure',
-    '.fluent-read-bilingual-content',
-    '.fluent-read-bilingual-text',
-    '.fluent-read-loading',
-    '.fluent-read-retry-wrapper',
-    '.fluent-read-failure',
 ].join(', ');
 const MIN_TRANSLATABLE_TEXT_LENGTH = 3;
 const MAX_TRANSLATABLE_TEXT_LENGTH = 3072;
@@ -131,11 +123,7 @@ export function resetTranslationTargetDom(target: TranslationTarget, sourceKey?:
         target.element.removeAttribute(TRANSLATED_ATTR);
         target.element.removeAttribute(TRANSLATED_ID_ATTR);
         target.element.removeAttribute(SOURCE_KEY_ATTR);
-        target.element.removeAttribute(LEGACY_TRANSLATED_ATTR);
-        target.element.removeAttribute(LEGACY_TRANSLATED_ID_ATTR);
-        target.element.removeAttribute(LEGACY_SOURCE_KEY_ATTR);
         target.element.classList.remove('bilingual-translate-bilingual');
-        target.element.classList.remove('fluent-read-bilingual');
         return;
     }
 
@@ -522,7 +510,7 @@ function getClosestElement(node: any): Element | null {
 }
 
 function getTranslationUiSourceKey(node: Element): string | null {
-    return node.getAttribute(SOURCE_KEY_ATTR) || node.getAttribute(LEGACY_SOURCE_KEY_ATTR);
+    return node.getAttribute(SOURCE_KEY_ATTR);
 }
 
 function removeExistingTranslationNodeForTarget(target: TranslationTarget, translationNode: HTMLElement) {

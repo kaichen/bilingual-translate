@@ -102,15 +102,15 @@ describe("translation target normalization", () => {
       <ul>
         <li>
           Decoder Src Attention explains encoder behavior.
-          <span class="fluent-read-bilingual-content" data-fr-source-key="Decoder Src Attention explains encoder behavior.">
-            <span class="fluent-read-bilingual-text fluent-display-dot-underline">解码器 Src Attention</span>
+          <span class="bilingual-translate-bilingual-content" data-bt-source-key="Decoder Src Attention explains encoder behavior.">
+            <span class="bilingual-translate-bilingual-text bilingual-display-dot-underline">解码器 Src Attention</span>
           </span>
         </li>
       </ul>
     `;
 
-    const translationContainer = document.querySelector(".fluent-read-bilingual-content") as HTMLElement;
-    const translationText = document.querySelector(".fluent-read-bilingual-text") as HTMLElement;
+    const translationContainer = document.querySelector(".bilingual-translate-bilingual-content") as HTMLElement;
+    const translationText = document.querySelector(".bilingual-translate-bilingual-text") as HTMLElement;
     const targetTexts = collectTranslationTargets(document.body).map(getTranslationTargetText);
 
     expect(collectTranslationTargets(translationContainer)).toEqual([]);

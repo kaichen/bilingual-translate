@@ -176,13 +176,6 @@
     background: linear-gradient(transparent 60%, #ffd700 40%);
 }
 
-/* 引用 */
-.bilingual-display-quote {
-    border-left: 4px solid #409eff;
-    padding-left: 8px;
-    font-style: italic;
-}
-
 /* 双语模式，block 强制换行、inline-block 自适应换行 */
 .bilingual-translate-bilingual-content {
     display: block; /* 设置为块级元素，强制换行 */

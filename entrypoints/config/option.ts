@@ -134,7 +134,6 @@ export const options = {
         {value: 10, label: "荧光划线", class: "bilingual-display-learning-mode"},
         {value: 11, label: "荧光标记", class: "bilingual-display-marker"},
         {value: 13, label: "温暖黄底", class: "bilingual-display-lightyellow"},
-        {value: 16, label: "典雅引用", class: "bilingual-display-quote"},
         {value: 17, label: "轻巧边框", class: "bilingual-display-border"},
     ],
     theme: [

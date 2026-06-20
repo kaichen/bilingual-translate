@@ -364,6 +364,7 @@ function shouldSkipText(text: string): boolean {
         isNonLinguisticText(normalizedText) ||
         isNumericContent(normalizedText) ||
         isUserIdentifier(normalizedText) ||
+        isUrlOnly(normalizedText) ||
         isSimplePhraseText(normalizedText);
 }
 
@@ -436,6 +437,7 @@ function shouldSkipNode(node: any, tag: string): boolean {
         node.isContentEditable ||
         checkTextSize(node) ||
         isNonLinguisticContent(node) ||
+        isUrlOnlyContent(node) ||
         isSimplePhraseContent(node) ||
         isMainlyNumericContent(node);
 }
@@ -495,6 +497,16 @@ function isNonLinguisticContent(node: any): boolean {
     if (!node?.textContent) return false;
 
     return isNonLinguisticText(node.textContent);
+}
+
+// 仅含单个 URL 的对象不翻译：http(s):// 或 www. 开头且无空白（单 token）。
+// 只认显式 URL 前缀，避免误伤 "Node.js"、"U.S.A" 等裸域名样式词。
+export function isUrlOnly(text: string): boolean {
+    return /^(https?:\/\/|www\.)\S+$/i.test(text.trim());
+}
+
+function isUrlOnlyContent(node: any): boolean {
+    return isUrlOnly(node?.textContent || '');
 }
 
 function isInTranslationUi(node: any): boolean {

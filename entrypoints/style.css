@@ -171,8 +171,8 @@
     text-underline-offset: 0.2em;
 }
 
-/* 学习模式 */
-.bilingual-display-learning-mode {
+/* 荧光划线 */
+.bilingual-display-highlight-underline {
     background: linear-gradient(transparent 60%, #ffd700 40%);
 }
 

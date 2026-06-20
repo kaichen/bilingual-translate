@@ -131,7 +131,7 @@ export const options = {
         {value: 4, label: "蓝色实线", class: "bilingual-display-solid-underline"},
         {value: 5, label: "优雅虚线", class: "bilingual-display-dot-underline"},
         {value: 6, label: "活泼波浪", class: "bilingual-display-wavy"},
-        {value: 10, label: "荧光划线", class: "bilingual-display-learning-mode"},
+        {value: 10, label: "荧光划线", class: "bilingual-display-highlight-underline"},
         {value: 11, label: "荧光标记", class: "bilingual-display-marker"},
         {value: 13, label: "温暖黄底", class: "bilingual-display-lightyellow"},
         {value: 17, label: "轻巧边框", class: "bilingual-display-border"},

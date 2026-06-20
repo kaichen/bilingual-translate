@@ -5,6 +5,7 @@ import { getCenterPoint } from "@/entrypoints/utils/common";
 import './style.css';
 import { config, configReady } from "@/entrypoints/config/config";
 import { cancelAllTranslations } from "@/entrypoints/translate/translateApi";
+import { getTranslationActivity } from "@/entrypoints/translate/translateQueue";
 import { mountNewApiComponent } from "@/entrypoints/main/newApi";
 import { mountYouTubeSubtitleTranslation } from "@/entrypoints/main/youtube-subtitle";
 import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/main/trigger";
@@ -45,6 +46,11 @@ export default defineContentScript({
         
         // 处理右键菜单触发的全文翻译和撤销
         browser.runtime.onMessage.addListener((message: ContentMessage, sender: any, sendResponse: (response?: any) => void) => {
+            if (message.type === 'getTranslationProgress') {
+                // popup 轮询全文翻译进度（队列活动量）
+                sendResponse(getTranslationActivity());
+                return true;
+            }
             if (message.type === 'contextMenuTranslate') {
                 if (message.action === 'fullPage') {
                     // 触发全文翻译

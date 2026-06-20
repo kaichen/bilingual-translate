@@ -6,7 +6,7 @@ import { defaultOption, options, services } from '../entrypoints/config/option';
 import { models, providerOf, type Need } from '@/entrypoints/providers/registry';
 import { Config } from '@/entrypoints/config/model';
 import { parseHotkey } from './hotkey';
-import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse } from '@/entrypoints/utils/messages';
+import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse, type TranslationProgressResponse } from '@/entrypoints/utils/messages';
 import CustomHotkeyInput from './CustomHotkeyInput';
 import './Main.css';
 
@@ -147,8 +147,11 @@ function SettingRow({
 export default function Main() {
   const [config, setConfig] = useState(() => new Config());
   const [ready, setReady] = useState(false);
-  const [translatePageLoading, setTranslatePageLoading] = useState(false);
-  const [translatePageActive, setTranslatePageActive] = useState(false);
+  const [pageStatus, setPageStatus] = useState<'untranslated' | 'translating' | 'translated'>('untranslated');
+  const [translateBtnError, setTranslateBtnError] = useState('');
+  const busyRef = useRef(false);          // 防止消息往返期间重入
+  const pollAbortRef = useRef(false);     // popup 关闭/视频切换时停轮询
+  const btnErrorTimerRef = useRef<number | null>(null);
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
   const [showCustomMouseHotkeyDialog, setShowCustomMouseHotkeyDialog] = useState(false);
   const [showExportBox, setShowExportBox] = useState(false);
@@ -208,9 +211,12 @@ export default function Main() {
         type: 'getTranslationState',
         tabId,
       } satisfies BackgroundMessage)) as TranslationStateResponse;
-      setTranslatePageActive(Boolean(response?.isTranslated));
+      setPageStatus(response?.isTranslated ? 'translated' : 'untranslated');
     }).catch(() => undefined);
   }, [ready]);
+
+  // popup 卸载时停止进度轮询
+  useEffect(() => () => { pollAbortRef.current = true; }, []);
 
   useEffect(() => {
     const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -246,10 +252,41 @@ export default function Main() {
     });
   }
 
-  async function translateCurrentPage() {
-    if (translatePageLoading) return;
+  function showBtnError(message: string) {
+    setTranslateBtnError(message);
+    if (btnErrorTimerRef.current) window.clearTimeout(btnErrorTimerRef.current);
+    btnErrorTimerRef.current = window.setTimeout(() => setTranslateBtnError(''), 2200);
+  }
 
-    setTranslatePageLoading(true);
+  // 轮询 content 队列活动量：见到活动后连续两次归零（或封顶超时）即判「已翻译」
+  async function pollUntilTranslated(tabId: number) {
+    pollAbortRef.current = false;
+    const POLL_MS = 400, GRACE_MS = 600, MAX_MS = 30000;
+    const start = Date.now();
+    let seenActivity = false;
+    let idleHits = 0;
+    while (!pollAbortRef.current) {
+      await new Promise((r) => window.setTimeout(r, POLL_MS));
+      if (pollAbortRef.current) return;
+      if (Date.now() - start > MAX_MS) break;
+      let progress: TranslationProgressResponse | undefined;
+      try {
+        progress = (await browser.tabs.sendMessage(tabId, { type: 'getTranslationProgress' } satisfies ContentMessage)) as TranslationProgressResponse;
+      } catch {
+        break; // 页面不可达（已关闭/跳转）→ 视为结束
+      }
+      const busy = ((progress?.active ?? 0) + (progress?.pending ?? 0)) > 0;
+      if (busy) { seenActivity = true; idleHits = 0; continue; }
+      if (Date.now() - start < GRACE_MS && !seenActivity) continue; // 宽限：扫描尚未入队
+      if (++idleHits >= 2) break; // 连续两次空 → 首屏批次译完
+    }
+    if (!pollAbortRef.current) setPageStatus('translated');
+  }
+
+  async function translateCurrentPage() {
+    if (busyRef.current || pageStatus === 'translating') return;
+    busyRef.current = true;
+    const wasTranslated = pageStatus === 'translated';
     try {
       const tabs = await browser.tabs.query({ active: true, currentWindow: true });
       const tabId = tabs[0]?.id;
@@ -257,26 +294,32 @@ export default function Main() {
 
       const response = (await browser.tabs.sendMessage(tabId, {
         type: 'contextMenuTranslate',
-        action: translatePageActive ? 'restore' : 'fullPage',
+        action: wasTranslated ? 'restore' : 'fullPage',
       } satisfies ContentMessage)) as ContextMenuTranslateResponse;
 
       if (response?.status !== 'success') {
         throw new Error(`内容脚本未返回成功状态: ${JSON.stringify(response)}`);
       }
 
-      const nextActive = response.action === 'translated';
-      setTranslatePageActive(nextActive);
+      const nextTranslated = !wasTranslated;
       void browser.runtime.sendMessage({
         type: 'setTranslationState',
         tabId,
-        isTranslated: nextActive,
+        isTranslated: nextTranslated,
       } satisfies BackgroundMessage).catch(() => undefined);
-      notify('success', nextActive ? '已开始翻译当前网页' : '已移除当前网页翻译');
+
+      if (nextTranslated) {
+        setPageStatus('translating');   // 进入「翻译中」并轮询真实进度
+        void pollUntilTranslated(tabId);
+      } else {
+        pollAbortRef.current = true;     // 还原即停止任何进行中的轮询
+        setPageStatus('untranslated');
+      }
     } catch (error) {
       console.error('触发当前网页翻译失败:', error);
-      notify('error', translatePageActive ? '无法移除翻译，请刷新页面后重试' : '无法翻译当前网页，请刷新页面后重试');
+      showBtnError(wasTranslated ? '移除失败，请刷新重试' : '翻译失败，请刷新重试');
     } finally {
-      setTranslatePageLoading(false);
+      busyRef.current = false;
     }
   }
 
@@ -396,13 +439,18 @@ export default function Main() {
 
       <div className="bt-setting-row wide">
         <button
-          className={`bt-button ${translatePageActive ? 'success' : 'primary'} bt-full-width`}
+          className={`bt-button bt-full-width is-${pageStatus}`}
           type="button"
           onClick={translateCurrentPage}
-          disabled={translatePageLoading}
+          aria-busy={pageStatus === 'translating'}
         >
-          {translatePageLoading && <span className="bt-loading-dot" />}
-          {translatePageActive ? '移除翻译' : '翻译当前网页'}
+          {translateBtnError
+            ? translateBtnError
+            : pageStatus === 'translating'
+              ? '翻译中…'
+              : pageStatus === 'translated'
+                ? '移除翻译'
+                : '翻译当前网页'}
         </button>
       </div>
 

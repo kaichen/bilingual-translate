@@ -97,3 +97,10 @@ export function canAcceptMoreTasks(): boolean {
   const MAX_QUEUE_LENGTH = getMaxConcurrentTranslations() * 3;
   return pendingTranslations.length < MAX_QUEUE_LENGTH;
 }
+
+/**
+ * 当前队列活动量（只读快照），供 popup 轮询判定「翻译中 / 已完成」
+ */
+export function getTranslationActivity(): { active: number; pending: number } {
+  return { active: activeTranslations, pending: pendingTranslations.length };
+}

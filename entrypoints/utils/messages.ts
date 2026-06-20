@@ -11,6 +11,7 @@ export type BackgroundMessage =
 // —— 发往 content 的指令消息 ——
 export type ContentMessage =
     | { type: 'contextMenuTranslate'; action: 'fullPage' | 'restore' }
+    | { type: 'getTranslationProgress' }
     | { type: 'clearCache' };
 
 export type ExtMessage = BackgroundMessage | ContentMessage;
@@ -29,6 +30,12 @@ export interface TranslationStateResponse {
 export interface ContextMenuTranslateResponse {
     status?: string;
     action?: string;
+}
+
+// 全文翻译进度：popup 轮询当前 tab 的队列活动量，active+pending 归零即视为首屏批次译完
+export interface TranslationProgressResponse {
+    active: number;
+    pending: number;
 }
 
 export interface InputBoxTranslationResponse {

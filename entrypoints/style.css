@@ -153,11 +153,6 @@
 
 /* display 译文显示样式*/
 
-/* 弱化 */
-.bilingual-display-dimmed {
-    opacity: 0.7;
-}
-
 /* 实线下划线 */
 .bilingual-display-solid-underline {
     text-decoration-line: underline;
@@ -179,11 +174,6 @@
 /* 学习模式 */
 .bilingual-display-learning-mode {
     background: linear-gradient(transparent 60%, #ffd700 40%);
-}
-
-/* 透明模式 */
-.bilingual-display-transparent-mode {
-    opacity: 0.85;
 }
 
 /* 阴影效果 */
@@ -244,18 +234,6 @@
     background-color: rgba(255, 235, 59, 0.2);
 }
 
-.bilingual-display-lightblue {
-    background-color: rgba(64, 158, 255, 0.1);
-}
-
-.bilingual-display-lightgray {
-    background-color: rgba(158, 158, 158, 0.1);
-}
-
-.bilingual-display-italic {
-    font-style: italic;
-}
-
 .bilingual-display-border {
     display: inline-block;
     max-width: 100%;
@@ -265,47 +243,12 @@
     padding: 2px 6px;
 }
 
-.bilingual-display-text-shadow {
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* 新增的双语翻译样式 */
-.bilingual-display-modern-card {
-    display: inline-block;
-    max-width: 100%;
-    box-sizing: border-box;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
-    border-radius: 8px;
-    padding: 6px 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    margin: 4px 0;
-}
-
 .bilingual-display-wavy {
     text-decoration-line: underline;
     text-decoration-style: wavy;
     text-decoration-color: #409eff;
     text-decoration-thickness: 1.5px;
     text-underline-offset: 0.2em;
-}
-
-.bilingual-display-highlight-fade {
-    background: linear-gradient(104deg, rgba(64,158,255,0) 0.9%, rgba(64,158,255,0.1) 2.4%, rgba(64,158,255,0.15) 5.8%, rgba(64,158,255,0.1) 93%, rgba(64,158,255,0.1) 96%);
-    padding: 0.5em 0.8em;
-    border-radius: 4px;
-}
-
-.bilingual-display-elegant {
-    font-family: "Georgia", serif;
-    color: #666;
-    line-height: 1.6;
-    letter-spacing: 0.3px;
-}
-
-.bilingual-display-focus {
-    background: linear-gradient(to right, transparent, rgba(64,158,255,0.1) 4%, rgba(64,158,255,0.1) 96%, transparent);
-    padding: 4px 12px;
-    border-radius: 3px;
 }
 
 .bilingual-display-paper {
@@ -317,14 +260,6 @@
     border: 1px solid #eee;
     padding: 8px 12px;
     border-radius: 6px;
-}
-
-.bilingual-display-clean {
-    text-decoration-line: underline;
-    text-decoration-style: solid;
-    text-decoration-color: #e4e7ed;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.2em;
 }
 
 .bilingual-display-tech {

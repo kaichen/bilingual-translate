@@ -118,7 +118,6 @@ describe("bilingual translation text styling", () => {
       ".bilingual-display-solid-underline",
       ".bilingual-display-dot-underline",
       ".bilingual-display-wavy",
-      ".bilingual-display-clean",
     ].forEach(selector => {
       const block = cssBlock(selector);
       expect(block).toContain("text-decoration-line");

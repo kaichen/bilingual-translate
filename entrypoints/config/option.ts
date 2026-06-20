@@ -131,8 +131,6 @@ export const options = {
         {value: "basic", label: "基础样式", disabled: true},
         {value: 0, label: "朴素模式", class: "bilingual-display-default", group: "basic"},
         {value: 1, label: "加粗显示", class: "bilingual-display-bold", group: "basic"},
-        {value: 2, label: "优雅斜体", class: "bilingual-display-italic", group: "basic"},
-        {value: 3, label: "立体阴影", class: "bilingual-display-text-shadow", group: "basic"},
 
         // 下划线系列
         {value: "underline", label: "下划线系列", disabled: true},
@@ -143,37 +141,25 @@ export const options = {
         // 卡片系列
         {value: "card", label: "卡片系列", disabled: true},
         {value: 7, label: "简约卡片", class: "bilingual-display-card-mode", group: "card"},
-        {value: 8, label: "渐变卡片", class: "bilingual-display-modern-card", group: "card"},
         {value: 9, label: "纸张卡片", class: "bilingual-display-paper", group: "card"},
 
         // 高亮系列
         {value: "highlight", label: "高亮系列", disabled: true},
         {value: 10, label: "学习标记", class: "bilingual-display-learning-mode", group: "highlight"},
         {value: 11, label: "荧光标记", class: "bilingual-display-marker", group: "highlight"},
-        {value: 12, label: "柔和渐变", class: "bilingual-display-highlight-fade", group: "highlight"},
 
         // 背景色系列
         {value: "background", label: "背景色系列", disabled: true},
         {value: 13, label: "温暖黄底", class: "bilingual-display-lightyellow", group: "background"},
-        {value: 14, label: "清新蓝底", class: "bilingual-display-lightblue", group: "background"},
-        {value: 15, label: "素雅灰底", class: "bilingual-display-lightgray", group: "background"},
 
         // 特殊效果
         {value: "special", label: "特殊效果", disabled: true},
         {value: 16, label: "典雅引用", class: "bilingual-display-quote", group: "special"},
         {value: 17, label: "轻巧边框", class: "bilingual-display-border", group: "special"},
-        {value: 18, label: "阅读焦点", class: "bilingual-display-focus", group: "special"},
-        {value: 19, label: "简约底线", class: "bilingual-display-clean", group: "special"},
 
         // 专业样式
         {value: "pro", label: "专业样式", disabled: true},
         {value: 20, label: "代码风格", class: "bilingual-display-tech", group: "pro"},
-        {value: 21, label: "书籍风格", class: "bilingual-display-elegant", group: "pro"},
-
-        // 透明度
-        {value: "transparent", label: "透明效果", disabled: true},
-        {value: 22, label: "半透明弱化", class: "bilingual-display-dimmed", group: "transparent"},
-        {value: 23, label: "轻透明感", class: "bilingual-display-transparent-mode", group: "transparent"},
     ],
     theme: [
         {value: "auto", label: "跟随操作系统"},

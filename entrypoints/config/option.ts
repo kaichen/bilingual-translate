@@ -125,41 +125,17 @@ export const options = {
         {value: 0, label: "仅译文模式"},
         {value: 1, label: "双语对照模式"},
     ],
-    // 双语翻译样式
+    // 双语翻译样式（扁平列表，无分组）
     styles: [
-        // 基础样式
-        {value: "basic", label: "基础样式", disabled: true},
-        {value: 0, label: "无样式", class: "bilingual-display-default", group: "basic"},
-        {value: 1, label: "加粗显示", class: "bilingual-display-bold", group: "basic"},
-
-        // 下划线系列
-        {value: "underline", label: "下划线系列", disabled: true},
-        {value: 4, label: "蓝色实线", class: "bilingual-display-solid-underline", group: "underline"},
-        {value: 5, label: "优雅虚线", class: "bilingual-display-dot-underline", group: "underline"},
-        {value: 6, label: "活泼波浪", class: "bilingual-display-wavy", group: "underline"},
-
-        // 卡片系列
-        {value: "card", label: "卡片系列", disabled: true},
-        {value: 7, label: "简约卡片", class: "bilingual-display-card-mode", group: "card"},
-        {value: 9, label: "纸张卡片", class: "bilingual-display-paper", group: "card"},
-
-        // 高亮系列
-        {value: "highlight", label: "高亮系列", disabled: true},
-        {value: 10, label: "学习标记", class: "bilingual-display-learning-mode", group: "highlight"},
-        {value: 11, label: "荧光标记", class: "bilingual-display-marker", group: "highlight"},
-
-        // 背景色系列
-        {value: "background", label: "背景色系列", disabled: true},
-        {value: 13, label: "温暖黄底", class: "bilingual-display-lightyellow", group: "background"},
-
-        // 特殊效果
-        {value: "special", label: "特殊效果", disabled: true},
-        {value: 16, label: "典雅引用", class: "bilingual-display-quote", group: "special"},
-        {value: 17, label: "轻巧边框", class: "bilingual-display-border", group: "special"},
-
-        // 专业样式
-        {value: "pro", label: "专业样式", disabled: true},
-        {value: 20, label: "代码风格", class: "bilingual-display-tech", group: "pro"},
+        {value: 0, label: "无样式", class: "bilingual-display-default"},
+        {value: 4, label: "蓝色实线", class: "bilingual-display-solid-underline"},
+        {value: 5, label: "优雅虚线", class: "bilingual-display-dot-underline"},
+        {value: 6, label: "活泼波浪", class: "bilingual-display-wavy"},
+        {value: 10, label: "学习标记", class: "bilingual-display-learning-mode"},
+        {value: 11, label: "荧光标记", class: "bilingual-display-marker"},
+        {value: 13, label: "温暖黄底", class: "bilingual-display-lightyellow"},
+        {value: 16, label: "典雅引用", class: "bilingual-display-quote"},
+        {value: 17, label: "轻巧边框", class: "bilingual-display-border"},
     ],
     theme: [
         {value: "auto", label: "跟随操作系统"},
@@ -192,7 +168,7 @@ export const defaultOption = {
     on: true,
     from: "auto",
     to: "zh-Hans",
-    style: 1,
+    style: 5,
     display: 1,
     hotkey: "Control",
     service: services.microsoft,

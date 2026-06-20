@@ -390,14 +390,6 @@ export default function Main() {
     };
   }, [config]);
 
-  const styleGroups = useMemo(() => {
-    const groups = options.styles.filter((item) => item.disabled);
-    return groups.map((group) => ({
-      ...group,
-      options: options.styles.filter((item) => !item.disabled && item.group === group.value),
-    }));
-  }, []);
-
   return (
     <div className="bt-main-panel">
       {toast && <div className={`bt-toast ${toast.type}`}>{toast.message}</div>}
@@ -421,12 +413,8 @@ export default function Main() {
           {config.display === 1 && (
             <SettingRow label="译文样式" hint="选择双语模式下译文的显示样式，提供多种美观的效果">
               <select className="bt-select" value={String(config.style)} onChange={(event) => setField('style', Number(event.currentTarget.value))}>
-                {styleGroups.map((group) => (
-                  <optgroup key={String(group.value)} label={group.label}>
-                    {group.options.map((item) => (
-                      <option key={String(item.value)} value={String(item.value)}>{item.label}</option>
-                    ))}
-                  </optgroup>
+                {options.styles.map((item) => (
+                  <option key={String(item.value)} value={String(item.value)}>{item.label}</option>
                 ))}
               </select>
             </SettingRow>

@@ -176,27 +176,11 @@
     background: linear-gradient(transparent 60%, #ffd700 40%);
 }
 
-/* 阴影效果 */
-.bilingual-display-card-mode {
-    display: inline-block;
-    max-width: 100%;
-    box-sizing: border-box;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: rgba(64, 158, 255, 0.1);
-}
-
 /* 引用 */
 .bilingual-display-quote {
     border-left: 4px solid #409eff;
     padding-left: 8px;
     font-style: italic;
-}
-
-/* 加粗 */
-.bilingual-display-bold {
-    font-weight: bold;
 }
 
 /* 双语模式，block 强制换行、inline-block 自适应换行 */
@@ -251,27 +235,6 @@
     text-underline-offset: 0.2em;
 }
 
-.bilingual-display-paper {
-    display: inline-block;
-    max-width: 100%;
-    box-sizing: border-box;
-    background-color: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    border: 1px solid #eee;
-    padding: 8px 12px;
-    border-radius: 6px;
-}
-
-.bilingual-display-tech {
-    display: inline-block;
-    max-width: 100%;
-    box-sizing: border-box;
-    font-family: "Consolas", monospace;
-    background: #f8f9fa;
-    padding: 2px 6px;
-    border-radius: 3px;
-    border: 1px solid #eee;
-}
 
 #fl-youtube-subtitle {
     position: absolute;

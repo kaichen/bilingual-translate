@@ -770,7 +770,7 @@ function appendBilingualTranslationForTarget(target: TranslationTarget, text: st
 
 // config.style 对应的展示样式 class（无样式/未匹配则 undefined）
 function styleClassOf(styleValue: number | string): string | undefined {
-    return options.styles.find(s => s.value === styleValue && !s.disabled)?.class;
+    return options.styles.find(s => s.value === styleValue)?.class;
 }
 
 // 所有可能的展示样式 class，动态切换时先清除旧类

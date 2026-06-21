@@ -6,7 +6,7 @@ import { defaultOption, options, services } from '../entrypoints/config/option';
 import { models, providerOf, type Need } from '@/entrypoints/providers/registry';
 import { Config } from '@/entrypoints/config/model';
 import { parseHotkey } from './hotkey';
-import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse, type TranslationProgressResponse } from '@/entrypoints/utils/messages';
+import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse, type TranslationProgressResponse, type PageDomainResponse } from '@/entrypoints/utils/messages';
 import CustomHotkeyInput from './CustomHotkeyInput';
 import './Main.css';
 
@@ -148,6 +148,7 @@ export default function Main() {
   const [config, setConfig] = useState(() => new Config());
   const [ready, setReady] = useState(false);
   const [pageStatus, setPageStatus] = useState<'untranslated' | 'translating' | 'translated'>('untranslated');
+  const [currentDomain, setCurrentDomain] = useState('');
   const [translateBtnError, setTranslateBtnError] = useState('');
   const busyRef = useRef(false);          // 防止消息往返期间重入
   const pollAbortRef = useRef(false);     // popup 关闭/视频切换时停轮询
@@ -212,6 +213,10 @@ export default function Main() {
         tabId,
       } satisfies BackgroundMessage)) as TranslationStateResponse;
       setPageStatus(response?.isTranslated ? 'translated' : 'untranslated');
+
+      // 当前页站点 key（向 content 询问，避免依赖 tabs 权限读取 tab.url）
+      const domainResp = (await browser.tabs.sendMessage(tabId, { type: 'getPageDomain' } satisfies ContentMessage).catch(() => undefined)) as PageDomainResponse | undefined;
+      setCurrentDomain(domainResp?.domain || '');
     }).catch(() => undefined);
   }, [ready]);
 
@@ -453,6 +458,18 @@ export default function Main() {
                 : '翻译当前网页'}
         </button>
       </div>
+
+          {currentDomain && (
+            <SettingRow label="始终翻译此网站" hint={`访问 ${currentDomain} 时自动翻译整页`}>
+              <SwitchControl
+                checked={(config.autoTranslateDomains || []).includes(currentDomain)}
+                onChange={(value) => setField('autoTranslateDomains',
+                  value
+                    ? Array.from(new Set([...(config.autoTranslateDomains || []), currentDomain]))
+                    : (config.autoTranslateDomains || []).filter((d) => d !== currentDomain))}
+              />
+            </SettingRow>
+          )}
 
           <SettingRow label="翻译模式">
             <SelectControl value={config.display} options={options.display} onChange={(value) => setField('display', Number(value))} />

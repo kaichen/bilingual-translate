@@ -6,6 +6,7 @@ import './style.css';
 import { config, configReady } from "@/entrypoints/config/config";
 import { cancelAllTranslations } from "@/entrypoints/translate/translateApi";
 import { getTranslationActivity } from "@/entrypoints/translate/translateQueue";
+import { getDomainKey } from "@/entrypoints/utils/domain";
 import { mountNewApiComponent } from "@/entrypoints/main/newApi";
 import { mountYouTubeSubtitleTranslation } from "@/entrypoints/main/youtube-subtitle";
 import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/main/trigger";
@@ -18,8 +19,9 @@ export default defineContentScript({
         await configReady // 等待配置加载完成
         // 添加手动翻译事件监听器
         setupManualTranslationTriggers();
-        // 添加自动翻译事件监听器
-        if (config.autoTranslate) autoTranslationEvent();
+        // 自动翻译：全局开关，或当前站点在「始终翻译」列表中
+        const alwaysOnSite = (config.autoTranslateDomains || []).includes(getDomainKey(location.href));
+        if (config.autoTranslate || alwaysOnSite) autoTranslationEvent();
         
         mountNewApiComponent();
         mountYouTubeSubtitleTranslation();
@@ -49,6 +51,11 @@ export default defineContentScript({
             if (message.type === 'getTranslationProgress') {
                 // popup 轮询全文翻译进度（队列活动量）
                 sendResponse(getTranslationActivity());
+                return true;
+            }
+            if (message.type === 'getPageDomain') {
+                // popup「始终翻译此网站」开关用：返回当前页站点 key
+                sendResponse({ domain: getDomainKey(location.href) });
                 return true;
             }
             if (message.type === 'contextMenuTranslate') {

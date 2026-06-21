@@ -12,6 +12,7 @@ export type BackgroundMessage =
 export type ContentMessage =
     | { type: 'contextMenuTranslate'; action: 'fullPage' | 'restore' }
     | { type: 'getTranslationProgress' }
+    | { type: 'getPageDomain' }
     | { type: 'clearCache' };
 
 export type ExtMessage = BackgroundMessage | ContentMessage;
@@ -36,6 +37,11 @@ export interface ContextMenuTranslateResponse {
 export interface TranslationProgressResponse {
     active: number;
     pending: number;
+}
+
+// 当前页面站点 key（content 用 getDomainKey 计算，popup 据此做「始终翻译此网站」开关）
+export interface PageDomainResponse {
+    domain: string;
 }
 
 export interface InputBoxTranslationResponse {

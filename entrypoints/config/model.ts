@@ -11,7 +11,8 @@ interface IExtra {
 
 export class Config {
     on: boolean; // 是否开启
-    autoTranslate: boolean; // 是否即时翻译
+    autoTranslate: boolean; // 是否即时翻译（全局）
+    autoTranslateDomains: string[]; // 始终自动翻译的站点 key 列表（getDomainKey）
     youtubeSubtitle: boolean; // 是否启用 YouTube 字幕翻译
     from: string;
     to: string;
@@ -51,6 +52,7 @@ export class Config {
     constructor() {
         this.on = true;
         this.autoTranslate = false;
+        this.autoTranslateDomains = [];
         this.youtubeSubtitle = false;
         this.from = defaultOption.from;
         this.to = defaultOption.to;

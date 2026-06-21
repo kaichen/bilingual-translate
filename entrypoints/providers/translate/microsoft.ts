@@ -1,18 +1,17 @@
 import {services} from "../../config/option";
 import {config} from "@/entrypoints/config/config";
 
-async function microsoft(message: any) {
-    let fromLang = config.from === 'auto' ? '' : config.from;
-
+// 微软翻译核心：复用于 provider 分发与输入框翻译（background）。from 为空串表示自动检测。
+export async function microsoftTranslate(text: string, from: string, to: string): Promise<string> {
     const jwtToken = await refreshToken(config.token[services.microsoft]);
-    const resp = await fetch(`https://api-edge.cognitive.microsofttranslator.com/translate?from=${fromLang}&to=${config.to}&api-version=3.0&includeSentenceLength=true&textType=html`, {
+    const resp = await fetch(`https://api-edge.cognitive.microsofttranslator.com/translate?from=${from}&to=${to}&api-version=3.0&includeSentenceLength=true&textType=html`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Ocp-Apim-Subscription-Key': config.token[services.microsoft],
             'Authorization': 'Bearer ' + jwtToken
         },
-        body: JSON.stringify([{Text: message.origin}])
+        body: JSON.stringify([{Text: text}])
     });
 
     if (resp.ok) {
@@ -22,6 +21,11 @@ async function microsoft(message: any) {
         console.log(resp)
         throw new Error(`翻译失败: ${resp.status} ${resp.statusText} body: ${await resp.text()}`);
     }
+}
+
+async function microsoft(message: any) {
+    let fromLang = config.from === 'auto' ? '' : config.from;
+    return microsoftTranslate(message.origin, fromLang, config.to);
 }
 
 async function refreshToken(token: string) {

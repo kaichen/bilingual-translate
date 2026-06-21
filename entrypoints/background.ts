@@ -2,56 +2,10 @@ import {_service} from "@/entrypoints/providers/service";
 import {config} from "@/entrypoints/config/config";
 import {CONTEXT_MENU_IDS} from "@/entrypoints/utils/constant";
 import {type BackgroundMessage, type TranslateRequest} from "@/entrypoints/utils/messages";
+import {microsoftTranslate} from "@/entrypoints/providers/translate/microsoft";
 
 // 翻译状态管理
 let translationStateMap = new Map<number, boolean>(); // tabId -> isTranslated
-
-/**
- * 在background脚本中调用微软翻译API（避免content script直接跨域请求限制）
- */
-async function translateWithMicrosoftInBackground(text: string, targetLang: string): Promise<string> {
-    try {
-        // 获取微软翻译的JWT令牌
-        const jwtToken = await refreshMicrosoftTokenInBackground();
-
-        // 调用微软翻译API
-        const response = await fetch(`https://api-edge.cognitive.microsofttranslator.com/translate?from=&to=${targetLang}&api-version=3.0&includeSentenceLength=true&textType=html`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + jwtToken
-            },
-            body: JSON.stringify([{ Text: text }])
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            return result[0].translations[0].text;
-        } else {
-            throw new Error(`微软翻译失败: ${response.status} ${response.statusText}`);
-        }
-    } catch (error) {
-        console.error('微软翻译请求失败:', error);
-        throw error;
-    }
-}
-
-/**
- * 在background脚本中刷新微软翻译令牌
- */
-async function refreshMicrosoftTokenInBackground(): Promise<string> {
-    try {
-        const response = await fetch("https://edge.microsoft.com/translate/auth");
-        if (response.ok) {
-            return await response.text();
-        } else {
-            throw new Error(`获取微软翻译令牌失败: ${response.status} ${response.statusText}`);
-        }
-    } catch (error) {
-        console.error('获取微软翻译令牌失败:', error);
-        throw error;
-    }
-}
 
 export default defineBackground({
     persistent: {
@@ -179,7 +133,8 @@ export default defineBackground({
                                 resolve({ success: true });
                                 return;
                             case 'inputBoxTranslation': {
-                                const translatedText = await translateWithMicrosoftInBackground(message.text, message.targetLang);
+                                // 输入框翻译固定走微软，自动检测源语言、译到指定目标语言（复用 provider 微软核心）
+                                const translatedText = await microsoftTranslate(message.text, '', message.targetLang);
                                 resolve({ success: true, translatedText });
                                 return;
                             }

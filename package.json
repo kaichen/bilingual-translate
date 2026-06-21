@@ -1,6 +1,6 @@
 {
   "name": "bilingual-translate",
-  "description": "一款革命性的浏览器开源翻译插件，让所有人都能够拥有母语般的阅读体验",
+  "description": "chrome双语翻译插件",
   "private": true,
   "version": "1.0.0",
   "type": "module",

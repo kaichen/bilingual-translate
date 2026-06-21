@@ -1,26 +1,23 @@
 # bilingual translate
 
-一款开源浏览器双语翻译扩展，让所有人都能够拥有母语般的阅读体验。
+网页翻译浏览器插件，双语对照呈现。
 
-[B站视频介绍](https://www.bilibili.com/video/BV1ux4y1e73x/)
-
-## 🌟 特性
-
-- **智能翻译**：支持 20+ 种翻译引擎，包括传统翻译和 AI 大模型。如：微软翻译、谷歌翻译、DeepL翻译、OpenAI、DeepSeek、Kimi、Ollama、自定义引擎等。
-- **双语对照**：支持原文与译文并列显示，让阅读更轻松。
-- **悬停翻译**：按住快捷键并悬停文本即可获得即时翻译结果，提高阅读效率。
-- **全文翻译**：通过设置面板或右键菜单一键翻译整个网页，无需刷新页面即可切换。
-- **隐私保护**：所有数据本地存储，代码开源透明。
-- **高度定制**：丰富的自定义选项，满足不同场景需求。
-- **完全免费**：开源免费，非商业化项目。
-
-## 📦 安装
-
-目前尚未发布到浏览器商店，请从源码构建后手动加载扩展：
+## 安装
 
 ```bash
 pnpm install
 pnpm build
 ```
 
-构建产物位于 `.output/chrome-mv3`，可在浏览器扩展管理页面中以开发者模式加载。
+构建结果位于 `.output/chrome-mv3`，可在浏览器扩展管理页面中以开发者模式加载。
+
+## 参考
+
+基于 FluentRead 改造重写，参考 Kiss Translator 功能实现
+
+- https://github.com/Bistutu/FluentRead
+- https://github.com/fishjar/kiss-translator
+
+## 开源协议
+
+GNU General Public License v3.0

@@ -1,5 +1,7 @@
 # bilingual translate
 
+<img src="public/icon/128.png" alt="bilingual translate" width="96" />
+
 网页翻译浏览器插件，双语对照呈现。
 
 ## 安装

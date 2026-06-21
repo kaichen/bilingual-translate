@@ -177,6 +177,14 @@ function setupManualTranslationTriggers() {
         handleTranslation(coordinate!.x, coordinate!.y);
     });
 
+    // 修饰键+点击翻译：按住 Alt/Option 点击文字，翻译其所在 DOM（捕获阶段先于页面默认行为，抑制链接跳转等）
+    document.body.addEventListener('click', event => {
+        if (config.hotkey !== constants.AltClick || !event.altKey) return;
+        event.preventDefault();
+        event.stopPropagation();
+        handleTranslation(event.clientX, event.clientY);
+    }, true);
+
     // 6、双击鼠标翻译事件
     document.body.addEventListener('dblclick', event => {
         if (config.hotkey == constants.DoubleClick) {

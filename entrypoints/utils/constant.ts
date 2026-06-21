@@ -5,6 +5,7 @@ export const constants = {
     DoubleClick: "DoubleClick",
     LongPress: "LongPress",
     MiddleClick: "MiddleClick",
+    AltClick: "AltClick", // 按住 Alt/Option 点击文字 → 翻译其所在 DOM
     // 触屏设备事件
     TwoFinger: "TwoFinger",
     ThreeFinger: "ThreeFinger",

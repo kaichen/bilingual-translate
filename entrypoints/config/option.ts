@@ -72,6 +72,7 @@ export const options = {
         {value: "DoubleClick", label: "鼠标双击"},
         {value: "LongPress", label: "鼠标长按"},
         {value: "MiddleClick", label: "鼠标滚轮单击"},
+        {value: "AltClick", label: "Alt/Option+点击"},
 
         {value: "touchscreen", label: "触屏设备选项", disabled: true},
         {value: "TwoFinger", label: "双指翻译"},

@@ -89,6 +89,19 @@
   min-width: 0;
 }
 
+/* 「始终翻译此网站」：开关行 + 其下整行展示的站点域名（长域名换行而非截断） */
+.bt-always-block .bt-setting-row {
+  margin-bottom: 4px;
+}
+
+.bt-always-domain {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bt-text-color-regular);
+  word-break: break-all;
+}
+
 .bt-select,
 .bt-input,
 .bt-textarea {

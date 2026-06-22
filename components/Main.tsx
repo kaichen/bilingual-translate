@@ -483,12 +483,15 @@ export default function Main() {
       </div>
 
           {currentDomain && (
-            <SettingRow label={`始终翻译 ${currentDomain}`} hint="开启后访问此网站将自动翻译整页，并立即翻译当前页">
-              <SwitchControl
-                checked={(config.autoTranslateDomains || []).includes(currentDomain)}
-                onChange={toggleAlwaysTranslateSite}
-              />
-            </SettingRow>
+            <div className="bt-always-block">
+              <SettingRow label="始终翻译此网站" hint="开启后访问此网站将自动翻译整页，并立即翻译当前页">
+                <SwitchControl
+                  checked={(config.autoTranslateDomains || []).includes(currentDomain)}
+                  onChange={toggleAlwaysTranslateSite}
+                />
+              </SettingRow>
+              <div className="bt-always-domain" title={currentDomain}>{currentDomain}</div>
+            </div>
           )}
 
           <SettingRow label="翻译模式">

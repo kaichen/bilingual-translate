@@ -135,9 +135,9 @@ function SettingRow({
 }) {
   return (
     <div className={`bt-setting-row ${wide ? 'wide' : ''}`}>
-      <div className="bt-setting-label" title={hint}>
+      <div className="bt-setting-label">
         <span>{label}</span>
-        {hint && <span className="bt-help-icon">?</span>}
+        {hint && <span className="bt-help-icon" tabIndex={0} aria-label={hint} data-hint={hint}>?</span>}
       </div>
       <div className="bt-setting-control">{children}</div>
     </div>

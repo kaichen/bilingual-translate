@@ -1,4 +1,4 @@
-import { handleTranslation, autoTranslateEnglishPage, restoreOriginalContent, restyleTranslations } from "./main/trans";
+import { handleTranslation, autoTranslateEnglishPage, restoreOriginalContent, restyleTranslations, isPageTranslated } from "./main/trans";
 import { cache } from "./translate/cache";
 import { constants } from "@/entrypoints/utils/constant";
 import { getCenterPoint } from "@/entrypoints/utils/common";
@@ -56,6 +56,11 @@ export default defineContentScript({
             if (message.type === 'getPageDomain') {
                 // popup「始终翻译此网站」开关用：返回当前页站点 key
                 sendResponse({ domain: getDomainKey(location.href) });
+                return true;
+            }
+            if (message.type === 'getPageTranslated') {
+                // popup 按钮状态同步的真相源：当前页是否处于全文翻译态（含常开自动翻译）
+                sendResponse({ translated: isPageTranslated() });
                 return true;
             }
             if (message.type === 'contextMenuTranslate') {

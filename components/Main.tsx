@@ -6,7 +6,7 @@ import { defaultOption, options, services } from '../entrypoints/config/option';
 import { models, providerOf, type Need } from '@/entrypoints/providers/registry';
 import { Config } from '@/entrypoints/config/model';
 import { parseHotkey } from './hotkey';
-import { type BackgroundMessage, type ContentMessage, type TranslationStateResponse, type ContextMenuTranslateResponse, type TranslationProgressResponse, type PageDomainResponse } from '@/entrypoints/utils/messages';
+import { type BackgroundMessage, type ContentMessage, type ContextMenuTranslateResponse, type TranslationProgressResponse, type PageDomainResponse, type PageTranslatedResponse } from '@/entrypoints/utils/messages';
 import CustomHotkeyInput from './CustomHotkeyInput';
 import './Main.css';
 
@@ -208,11 +208,9 @@ export default function Main() {
     void browser.tabs.query({ active: true, currentWindow: true }).then(async (tabs) => {
       const tabId = tabs[0]?.id;
       if (!tabId) return;
-      const response = (await browser.runtime.sendMessage({
-        type: 'getTranslationState',
-        tabId,
-      } satisfies BackgroundMessage)) as TranslationStateResponse;
-      setPageStatus(response?.isTranslated ? 'translated' : 'untranslated');
+      // 按钮状态以 content 实际翻译态为准（常开自动翻译时 background 状态会在每次加载被复位，故不可靠）
+      const stateResp = (await browser.tabs.sendMessage(tabId, { type: 'getPageTranslated' } satisfies ContentMessage).catch(() => undefined)) as PageTranslatedResponse | undefined;
+      setPageStatus(stateResp?.translated ? 'translated' : 'untranslated');
 
       // 当前页站点 key（向 content 询问，避免依赖 tabs 权限读取 tab.url）
       const domainResp = (await browser.tabs.sendMessage(tabId, { type: 'getPageDomain' } satisfies ContentMessage).catch(() => undefined)) as PageDomainResponse | undefined;

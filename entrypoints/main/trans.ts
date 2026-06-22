@@ -121,6 +121,11 @@ export function restoreOriginalContent() {
     tempStyleElements.forEach(el => el.remove());
 }
 
+// 当前页是否处于全文翻译态（常开/手动/全局自动统一信号），供 popup 按钮同步
+export function isPageTranslated(): boolean {
+    return isAutoTranslating;
+}
+
 // 自动翻译整个页面的功能
 export function autoTranslateEnglishPage() {
     // 如果已经在翻译中，则返回

@@ -13,6 +13,7 @@ export type ContentMessage =
     | { type: 'contextMenuTranslate'; action: 'fullPage' | 'restore' }
     | { type: 'getTranslationProgress' }
     | { type: 'getPageDomain' }
+    | { type: 'getPageTranslated' }
     | { type: 'clearCache' };
 
 export type ExtMessage = BackgroundMessage | ContentMessage;
@@ -42,6 +43,11 @@ export interface TranslationProgressResponse {
 // 当前页面站点 key（content 用 getDomainKey 计算，popup 据此做「始终翻译此网站」开关）
 export interface PageDomainResponse {
     domain: string;
+}
+
+// 当前页是否处于全文翻译态（content 的 isAutoTranslating，popup 按钮据此同步，含常开自动翻译）
+export interface PageTranslatedResponse {
+    translated: boolean;
 }
 
 export interface InputBoxTranslationResponse {

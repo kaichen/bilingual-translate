@@ -288,44 +288,67 @@ export default function Main() {
     if (!pollAbortRef.current) setPageStatus('translated');
   }
 
-  async function translateCurrentPage() {
-    if (busyRef.current || pageStatus === 'translating') return;
+  // 开启整页翻译（按钮"翻译"方向 / 常开开关打开时复用）。已翻译或翻译中则不重复触发。
+  async function startFullPageTranslation() {
+    if (busyRef.current || pageStatus === 'translating' || pageStatus === 'translated') return;
     busyRef.current = true;
-    const wasTranslated = pageStatus === 'translated';
     try {
       const tabs = await browser.tabs.query({ active: true, currentWindow: true });
       const tabId = tabs[0]?.id;
       if (!tabId) throw new Error('无法获取当前标签页');
 
       const response = (await browser.tabs.sendMessage(tabId, {
-        type: 'contextMenuTranslate',
-        action: wasTranslated ? 'restore' : 'fullPage',
+        type: 'contextMenuTranslate', action: 'fullPage',
       } satisfies ContentMessage)) as ContextMenuTranslateResponse;
+      if (response?.status !== 'success') throw new Error(`内容脚本未返回成功状态: ${JSON.stringify(response)}`);
 
-      if (response?.status !== 'success') {
-        throw new Error(`内容脚本未返回成功状态: ${JSON.stringify(response)}`);
-      }
-
-      const nextTranslated = !wasTranslated;
-      void browser.runtime.sendMessage({
-        type: 'setTranslationState',
-        tabId,
-        isTranslated: nextTranslated,
-      } satisfies BackgroundMessage).catch(() => undefined);
-
-      if (nextTranslated) {
-        setPageStatus('translating');   // 进入「翻译中」并轮询真实进度
-        void pollUntilTranslated(tabId);
-      } else {
-        pollAbortRef.current = true;     // 还原即停止任何进行中的轮询
-        setPageStatus('untranslated');
-      }
+      void browser.runtime.sendMessage({ type: 'setTranslationState', tabId, isTranslated: true } satisfies BackgroundMessage).catch(() => undefined);
+      setPageStatus('translating');   // 进入「翻译中」并轮询真实进度
+      void pollUntilTranslated(tabId);
     } catch (error) {
       console.error('触发当前网页翻译失败:', error);
-      showBtnError(wasTranslated ? '移除失败，请刷新重试' : '翻译失败，请刷新重试');
+      showBtnError('翻译失败，请刷新重试');
     } finally {
       busyRef.current = false;
     }
+  }
+
+  // 移除当前页翻译（按钮"还原"方向）
+  async function restoreCurrentPage() {
+    if (busyRef.current || pageStatus === 'translating') return;
+    busyRef.current = true;
+    try {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const tabId = tabs[0]?.id;
+      if (!tabId) throw new Error('无法获取当前标签页');
+
+      const response = (await browser.tabs.sendMessage(tabId, {
+        type: 'contextMenuTranslate', action: 'restore',
+      } satisfies ContentMessage)) as ContextMenuTranslateResponse;
+      if (response?.status !== 'success') throw new Error(`内容脚本未返回成功状态: ${JSON.stringify(response)}`);
+
+      void browser.runtime.sendMessage({ type: 'setTranslationState', tabId, isTranslated: false } satisfies BackgroundMessage).catch(() => undefined);
+      pollAbortRef.current = true;     // 还原即停止任何进行中的轮询
+      setPageStatus('untranslated');
+    } catch (error) {
+      console.error('移除翻译失败:', error);
+      showBtnError('移除失败，请刷新重试');
+    } finally {
+      busyRef.current = false;
+    }
+  }
+
+  function translateCurrentPage() {
+    if (pageStatus === 'translated') void restoreCurrentPage();
+    else void startFullPageTranslation();
+  }
+
+  // 切换「始终翻译此网站」：增删站点 key；打开时立即翻译当前页
+  function toggleAlwaysTranslateSite(enabled: boolean) {
+    const list = config.autoTranslateDomains || [];
+    setField('autoTranslateDomains',
+      enabled ? Array.from(new Set([...list, currentDomain])) : list.filter((d) => d !== currentDomain));
+    if (enabled) void startFullPageTranslation();
   }
 
   function handleMouseHotkeyChange(value: string) {
@@ -460,13 +483,10 @@ export default function Main() {
       </div>
 
           {currentDomain && (
-            <SettingRow label="始终翻译此网站" hint={`访问 ${currentDomain} 时自动翻译整页`}>
+            <SettingRow label={`始终翻译 ${currentDomain}`} hint="开启后访问此网站将自动翻译整页，并立即翻译当前页">
               <SwitchControl
                 checked={(config.autoTranslateDomains || []).includes(currentDomain)}
-                onChange={(value) => setField('autoTranslateDomains',
-                  value
-                    ? Array.from(new Set([...(config.autoTranslateDomains || []), currentDomain]))
-                    : (config.autoTranslateDomains || []).filter((d) => d !== currentDomain))}
+                onChange={toggleAlwaysTranslateSite}
               />
             </SettingRow>
           )}

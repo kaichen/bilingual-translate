@@ -40,14 +40,16 @@ function SelectControl({
   onChange,
   options: selectOptions,
   placeholder,
+  disabled = false,
 }: {
   value: string | number | boolean;
   onChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
-    <select className="bt-select" value={String(value)} onChange={(event) => onChange(event.currentTarget.value)} aria-label={placeholder}>
+    <select className="bt-select" value={String(value)} disabled={disabled} onChange={(event) => onChange(event.currentTarget.value)} aria-label={placeholder}>
       {placeholder && <option value="">{placeholder}</option>}
       {selectOptions.map((option) => (
         <option key={`${option.value}-${option.label}`} value={String(option.value)} disabled={option.disabled}>
@@ -492,8 +494,8 @@ export default function Main() {
             </div>
           )}
 
-          <SettingRow label="翻译模式">
-            <SelectControl value={config.display} options={options.display} onChange={(value) => setField('display', Number(value))} />
+          <SettingRow label="翻译模式" hint="即时切换：页面已翻译时立即按新模式重排（翻译进行中禁用切换）">
+            <SelectControl value={config.display} options={options.display} disabled={pageStatus === 'translating'} onChange={(value) => setField('display', Number(value))} />
           </SettingRow>
 
           {config.display === 1 && (

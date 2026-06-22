@@ -32,6 +32,11 @@ export default defineContentScript({
                 const next = typeof newValue === 'string' ? JSON.parse(newValue) : newValue;
                 const prev = typeof oldValue === 'string' ? JSON.parse(oldValue) : oldValue;
                 if (next && next.style !== prev?.style) restyleTranslations(next.style);
+                // 即时切换翻译模式：页面已翻译时按新模式重排（还原后重译，命中本地缓存近乎即时、无新请求）
+                if (next && next.display !== prev?.display && isPageTranslated()) {
+                    restoreOriginalContent();
+                    autoTranslateEnglishPage();
+                }
             } catch { /* 忽略解析失败 */ }
         });
 

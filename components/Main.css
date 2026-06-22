@@ -167,6 +167,11 @@
   cursor: pointer;
 }
 
+.bt-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .bt-select:hover,
 .bt-input:hover {
   border-color: var(--bt-text-color-placeholder);

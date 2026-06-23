@@ -75,8 +75,8 @@ export default defineContentScript({
                     sendResponse({ status: 'success', action: 'translated' });
                     return true;
                 } else if (message.action === 'restore') {
-                    // 撤销翻译，恢复原文
-                    restoreOriginalContent();
+                    // 撤销翻译，恢复原文（用户操作 → 0.5s 淡出动画）
+                    restoreOriginalContent(true);
                     sendResponse({ status: 'success', action: 'restored' });
                     return true;
                 }

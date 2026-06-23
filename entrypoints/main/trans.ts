@@ -63,41 +63,11 @@ const X_SHOW_MORE_EXCLUDED_SELECTOR = [
 
 let nodeIdCounter = 0; // 节点ID计数器
 
-// 恢复原文内容
-export function restoreOriginalContent() {
-    // 取消所有等待中的翻译任务
+// 恢复原文内容。animated=true：译文先 0.5s 淡出再拆除（用户"移除翻译"）；false：即时拆除（模式切换重排复用，须同步）
+export function restoreOriginalContent(animated = false) {
+    // 立即停止翻译与观察器，避免淡出期间继续处理新节点
     cancelAllTranslations();
     stopXContinuousTranslation();
-    
-    // 1. 遍历所有已翻译的节点
-    document.querySelectorAll(`[${TRANSLATED_ATTR}="true"]`).forEach(node => {
-        const nodeId = node.getAttribute(TRANSLATED_ID_ATTR);
-        if (nodeId && originalContents.has(nodeId)) {
-            const originalContent = originalContents.get(nodeId);
-            node.innerHTML = originalContent;
-            node.removeAttribute(TRANSLATED_ATTR);
-            node.removeAttribute(TRANSLATED_ID_ATTR);
-            node.removeAttribute(SOURCE_KEY_ATTR);
-            
-            // 移除可能添加的翻译相关类
-            node.classList.remove('bilingual-translate-bilingual');
-        }
-    });
-    
-    // 2. 移除所有翻译内容元素
-    document.querySelectorAll('.bilingual-translate-bilingual-content').forEach(element => {
-        element.remove();
-    });
-    
-    // 3. 移除所有翻译过程中添加的加载动画和错误提示
-    document.querySelectorAll('.bilingual-translate-loading, .bilingual-translate-retry-wrapper').forEach(element => {
-        element.remove();
-    });
-    
-    // 4. 清空存储的原始内容
-    originalContents.clear();
-    
-    // 5. 停止所有观察器
     if (observer) {
         observer.disconnect();
         observer = null;
@@ -106,19 +76,42 @@ export function restoreOriginalContent() {
         mutationObserver.disconnect();
         mutationObserver = null;
     }
-    
-    // 6. 重置所有翻译相关的状态
     isAutoTranslating = false;
     htmlSet.clear(); // 清空防抖集合
     observedTargetMap = new Map<Element, TranslationTarget[]>();
     observedHosts = new WeakSet<Element>();
     processedTargetSourceKeys = new WeakMap<Node, string>();
     xShowMorePendingTargets = new WeakSet<Element>();
-    nodeIdCounter = 0; // 重置节点ID计数器
-    
-    // 7. 消除可能存在的全局样式污染
-    const tempStyleElements = document.querySelectorAll('style[data-bt-temp-style]');
-    tempStyleElements.forEach(el => el.remove());
+
+    // 真正拆除 DOM：还原原文、移除译文/加载/重试元素、清状态
+    const teardownDom = () => {
+        document.querySelectorAll(`[${TRANSLATED_ATTR}="true"]`).forEach(node => {
+            const nodeId = node.getAttribute(TRANSLATED_ID_ATTR);
+            if (nodeId && originalContents.has(nodeId)) {
+                node.innerHTML = originalContents.get(nodeId);
+                node.removeAttribute(TRANSLATED_ATTR);
+                node.removeAttribute(TRANSLATED_ID_ATTR);
+                node.removeAttribute(SOURCE_KEY_ATTR);
+                node.classList.remove('bilingual-translate-bilingual');
+                node.classList.remove('bilingual-translate-fade-out');
+            }
+        });
+        document.querySelectorAll('.bilingual-translate-bilingual-content').forEach(el => el.remove());
+        document.querySelectorAll('.bilingual-translate-loading, .bilingual-translate-retry-wrapper').forEach(el => el.remove());
+        originalContents.clear();
+        nodeIdCounter = 0; // 重置节点ID计数器
+        document.querySelectorAll('style[data-bt-temp-style]').forEach(el => el.remove()); // 消除全局样式污染
+    };
+
+    if (animated) {
+        // 译文淡出：双语模式仅淡出追加的译文 span（原文保留）；单译文模式淡出整节点（拆除后还原原文）
+        document.querySelectorAll(
+            `.bilingual-translate-bilingual-content, [${TRANSLATED_ATTR}="true"]:not(.bilingual-translate-bilingual), .bilingual-translate-loading, .bilingual-translate-retry-wrapper`
+        ).forEach(el => el.classList.add('bilingual-translate-fade-out'));
+        setTimeout(teardownDom, 500);
+    } else {
+        teardownDom();
+    }
 }
 
 // 当前页是否处于全文翻译态（常开/手动/全局自动统一信号），供 popup 按钮同步

@@ -33,7 +33,7 @@ export function selectorList(selector?: string | string[]): string[] {
     return selector?.trim() ? [selector] : [];
 }
 
-const DEFAULT_IGNORE_SELECTOR = "button, footer, pre, mark, nav, svg, img[src*='.svg'], [class*='logo'] svg, [id*='logo'] svg";
+const DEFAULT_IGNORE_SELECTOR = "button, footer, pre, mark, nav, svg, #fl-youtube-subtitle, img[src*='.svg'], [class*='logo'] svg, [id*='logo'] svg";
 
 // 站点规则注册表（单一真相源）。selector 为数组时：首项是全局批量扫描选择器，
 // 整个数组是 hover 单节点上卷链（按序优先）。命令式跳过走 skipNode，译文回填走 replace。

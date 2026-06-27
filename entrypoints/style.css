@@ -279,3 +279,8 @@
 .fl-youtube-subtitle-player .ytp-caption-window-container {
     top: -99999px !important;
 }
+
+.fl-youtube-subtitle-player [class^="captionsContainer-"],
+.fl-youtube-subtitle-player [class*=" captionsContainer-"] {
+    opacity: 0 !important;
+}

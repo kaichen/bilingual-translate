@@ -13,7 +13,7 @@ export class Config {
     on: boolean; // 是否开启
     autoTranslate: boolean; // 是否即时翻译（全局）
     autoTranslateDomains: string[]; // 始终自动翻译的站点 key 列表（getDomainKey）
-    youtubeSubtitle: boolean; // 是否启用 YouTube 字幕翻译
+    youtubeSubtitle: boolean; // 是否启用视频字幕翻译
     from: string;
     to: string;
     hotkey: string;

@@ -639,7 +639,7 @@ export default function Main() {
               <SwitchControl checked={config.animations} onChange={(value) => setField('animations', value)} />
             </SettingRow>
 
-            <SettingRow label="YouTube 字幕翻译" hint="在 YouTube 打开字幕(CC)时，于视频上叠加双语字幕">
+            <SettingRow label="视频字幕翻译" hint="在 YouTube 或 Substack 播放器打开字幕时，于视频上叠加双语字幕">
               <SwitchControl checked={config.youtubeSubtitle} onChange={(value) => setField('youtubeSubtitle', value)} />
             </SettingRow>
 

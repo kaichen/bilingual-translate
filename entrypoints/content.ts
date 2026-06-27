@@ -8,7 +8,7 @@ import { cancelAllTranslations } from "@/entrypoints/translate/translateApi";
 import { getTranslationActivity } from "@/entrypoints/translate/translateQueue";
 import { getDomainKey } from "@/entrypoints/utils/domain";
 import { mountNewApiComponent } from "@/entrypoints/main/newApi";
-import { mountYouTubeSubtitleTranslation } from "@/entrypoints/main/youtube-subtitle";
+import { mountSubstackSubtitleTranslation, mountYouTubeSubtitleTranslation } from "@/entrypoints/main/youtube-subtitle";
 import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/main/trigger";
 import { type ContentMessage, type BackgroundMessage } from "@/entrypoints/utils/messages";
 
@@ -25,6 +25,7 @@ export default defineContentScript({
         
         mountNewApiComponent();
         mountYouTubeSubtitleTranslation();
+        mountSubstackSubtitleTranslation();
 
         // 译文样式动态切换：popup 改样式后，实时重刷页面已有译文节点（无需重译）
         storage.watch('local:config', (newValue: any, oldValue: any) => {
@@ -32,6 +33,10 @@ export default defineContentScript({
                 const next = typeof newValue === 'string' ? JSON.parse(newValue) : newValue;
                 const prev = typeof oldValue === 'string' ? JSON.parse(oldValue) : oldValue;
                 if (next && next.style !== prev?.style) restyleTranslations(next.style);
+                if (next?.youtubeSubtitle && !prev?.youtubeSubtitle) {
+                    mountYouTubeSubtitleTranslation();
+                    mountSubstackSubtitleTranslation();
+                }
                 // 即时切换翻译模式：页面已翻译时按新模式重排（还原后重译，命中本地缓存近乎即时、无新请求）
                 if (next && next.display !== prev?.display && isPageTranslated()) {
                     restoreOriginalContent();

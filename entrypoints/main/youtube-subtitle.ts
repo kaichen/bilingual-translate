@@ -1,5 +1,6 @@
 import { config } from "@/entrypoints/config/config";
 import { getMainDomain } from "@/entrypoints/main/site-rules";
+import { cancelDub, syncDub } from "@/entrypoints/main/youtube-dub";
 import { cancelAllTranslations, translateText } from "@/entrypoints/translate/translateApi";
 
 const MESSAGE_SOURCE = 'fl-yt-timedtext';
@@ -335,14 +336,22 @@ async function attachForVideo(sessionId: number) {
         translateLookahead();
         renderSubtitle();
     };
+    const onInterrupt = () => cancelDub();
     video.addEventListener('timeupdate', onTimeUpdate);
-    videoTimeCleanup = () => video.removeEventListener('timeupdate', onTimeUpdate);
+    video.addEventListener('pause', onInterrupt);
+    video.addEventListener('seeking', onInterrupt);
+    videoTimeCleanup = () => {
+        video.removeEventListener('timeupdate', onTimeUpdate);
+        video.removeEventListener('pause', onInterrupt);
+        video.removeEventListener('seeking', onInterrupt);
+    };
     renderSubtitle();
 }
 
 function resetVideoState() {
     videoSessionId += 1;
     cancelVideoTranslations();
+    cancelDub();
     cues = [];
     ccActive = false;
     ccObserver?.disconnect();
@@ -370,6 +379,7 @@ function syncCcState() {
     ccActive = nextActive;
     if (!ccActive) {
         cancelVideoTranslations();
+        cancelDub();
         hideOverlay(true);
         return;
     }
@@ -700,11 +710,13 @@ function renderSubtitle() {
             ccActive = false;
             cancelVideoTranslations();
         }
+        cancelDub();
         hideOverlay(true);
         return;
     }
 
     if (!ccActive) {
+        cancelDub();
         hideOverlay(true);
         return;
     }
@@ -726,6 +738,8 @@ function renderSubtitle() {
     const translated = overlay.querySelector<HTMLElement>('.fl-youtube-subtitle-translation');
     if (original) original.textContent = activeCue.text;
     if (translated) translated.textContent = activeCue.translation ?? '...';
+
+    syncDub(activeCue, video);
 }
 
 function ensureOverlay(): HTMLElement | null {

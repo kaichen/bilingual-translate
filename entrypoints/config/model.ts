@@ -14,6 +14,8 @@ export class Config {
     autoTranslate: boolean; // 是否即时翻译（全局）
     autoTranslateDomains: string[]; // 始终自动翻译的站点 key 列表（getDomainKey）
     youtubeSubtitle: boolean; // 是否启用视频字幕翻译
+    youtubeDubbing: boolean; // 是否启用字幕配音（TTS 朗读字幕并静音原声）
+    youtubeDubbingSource: string; // 配音朗读内容：translation=译文，origin=原文
     from: string;
     to: string;
     hotkey: string;
@@ -54,6 +56,8 @@ export class Config {
         this.autoTranslate = false;
         this.autoTranslateDomains = [];
         this.youtubeSubtitle = false;
+        this.youtubeDubbing = false;
+        this.youtubeDubbingSource = 'translation';
         this.from = defaultOption.from;
         this.to = defaultOption.to;
         this.style = defaultOption.style;

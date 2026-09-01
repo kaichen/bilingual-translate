@@ -643,6 +643,18 @@ export default function Main() {
               <SwitchControl checked={config.youtubeSubtitle} onChange={(value) => setField('youtubeSubtitle', value)} />
             </SettingRow>
 
+            {config.youtubeSubtitle && (
+              <SettingRow label="字幕配音朗读" hint="播放时用系统语音朗读字幕，并静音视频原声（仅 YouTube，需打开 CC 字幕）">
+                <SwitchControl checked={config.youtubeDubbing} onChange={(value) => setField('youtubeDubbing', value)} />
+              </SettingRow>
+            )}
+
+            {config.youtubeSubtitle && config.youtubeDubbing && (
+              <SettingRow label="朗读内容">
+                <SelectControl value={config.youtubeDubbingSource} options={options.youtubeDubbingSource} onChange={(value) => setField('youtubeDubbingSource', value)} />
+              </SettingRow>
+            )}
+
             <SettingRow label="输入框翻译" hint="在任何文本输入框中使用指定方式触发翻译当前输入的内容">
               <SelectControl value={config.inputBoxTranslationTrigger} options={options.inputBoxTranslationTrigger} onChange={(value) => setField('inputBoxTranslationTrigger', value)} />
             </SettingRow>

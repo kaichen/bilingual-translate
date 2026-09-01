@@ -1,9 +1,19 @@
 import type {SiteRule} from "./index";
 import {DEFAULT_SELECT_STYLE, debugLog, isSpecialContent} from "./shared";
 
+const X_TRANSLATION_SELECTOR = [
+    "[data-testid='tweetText']",
+    "[data-testid='twitter-article-title']",
+    "[data-testid='UserDescription']",
+    "[data-testid='longformRichTextComponent'] > div > .longform-unstyled",
+    "[data-testid='longformRichTextComponent'] > div > div > :is(h1, h2, h3, h4, h5, h6)",
+    "[data-testid='longformRichTextComponent'] > div > :is(ul, ol) > li",
+    "[data-testid='longformRichTextComponent'] > div > blockquote > div",
+].join(", ");
+
 export const xRule: SiteRule = {
     pattern: "twitter.com, x.com",
-    selector: "[data-testid='tweetText'], [data-testid='twitter-article-title'], [data-testid='UserDescription']",
+    selector: X_TRANSLATION_SELECTOR,
     ignoreSelector: "header, nav, [role='button'], [data-testid='videoPlayer'], [data-testid^='tweetTextarea'], [data-testid='sidebarColumn'], [data-testid='tweetTextarea_0'], [data-testid='User-Name'], [data-testid='UserName'], [data-testid='reply'], [data-testid='retweet'], [data-testid='like'], [data-testid='bookmark'], [data-testid='share'], [data-testid='caret'], [data-testid='app-bar-close'], [aria-label='Timeline: Trending now'], [aria-label='Who to follow']",
     autoScan: false,
     selectStyle: DEFAULT_SELECT_STYLE,
@@ -20,7 +30,7 @@ export function shouldSkipTwitterElement(node: any): boolean {
         return true;
     }
 
-    if (node.matches?.('[data-testid="tweetText"], [data-testid="twitter-article-title"], [data-testid="UserDescription"]')) {
+    if (node.matches?.(X_TRANSLATION_SELECTOR)) {
         return false;
     }
 

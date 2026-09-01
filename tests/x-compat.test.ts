@@ -7,6 +7,7 @@ vi.mock("@/entrypoints/main/trans", () => ({
 
 const xUrl = "https://x.com/home";
 const xPhotoUrl = "https://x.com/hu_yifei/status/2066925930271166549/photo/1";
+const xArticleUrl = "https://x.com/poteto/status/2094457600259842065";
 
 function setXUrl(url = xUrl) {
   (window as Window & { happyDOM?: { setURL(url: string): void } }).happyDOM?.setURL(url);
@@ -93,6 +94,44 @@ describe("X.com site compatibility rule", () => {
 
     expect(collectTranslationTargets(document.body).map(getTranslationTargetText)).toEqual([
       longTweetText,
+    ]);
+  });
+
+  it("selects X article body blocks without selecting embedded media", () => {
+    setXUrl(xArticleUrl);
+    document.body.innerHTML = `
+      <main role="main">
+        <article data-testid="tweet">
+          <div data-testid="twitter-article-title">The Complete Guide to pstack Pt. 1</div>
+          <div data-testid="longformRichTextComponent" class="public-DraftEditor-content">
+            <div>
+              <div class="longform-unstyled">
+                <div class="public-DraftStyleDefault-block public-DraftStyleDefault-ltr">
+                  <span>Article body paragraph with <a href="https://x.ai/pstack">an inline link</a>.</span>
+                </div>
+              </div>
+              <section><img alt="Article illustration" src="/article.png" /></section>
+              <div class="heading-wrapper"><h1 class="longform-header-one">Verification is all you need</h1></div>
+              <ul class="public-DraftStyleDefault-ul">
+                <li class="longform-unordered-list-item">Seed a development database</li>
+                <li class="longform-unordered-list-item">Create a test user</li>
+              </ul>
+              <blockquote class="longform-blockquote">
+                <div class="public-DraftStyleDefault-block">Use the control app to verify the change.</div>
+              </blockquote>
+            </div>
+          </div>
+        </article>
+      </main>
+    `;
+
+    expect(collectTranslationTargets(document.body).map(getTranslationTargetText)).toEqual([
+      "The Complete Guide to pstack Pt. 1",
+      "Article body paragraph with an inline link.",
+      "Verification is all you need",
+      "Seed a development database",
+      "Create a test user",
+      "Use the control app to verify the change.",
     ]);
   });
 

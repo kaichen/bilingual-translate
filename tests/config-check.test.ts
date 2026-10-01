@@ -3,11 +3,9 @@ import { validateConfig, type ConfigCheckSnapshot } from "../entrypoints/config/
 import { services } from "../entrypoints/config/option";
 
 const ok: ConfigCheckSnapshot = {
-  service: services.openai,
-  token: { [services.openai]: "sk-xxx" },
-  ak: "", sk: "",
-  tencentSecretId: "", tencentSecretKey: "",
-  model: { [services.openai]: "gpt-4.1-nano" },
+  service: services.deepseek,
+  token: { [services.deepseek]: "sk-xxx" },
+  model: { [services.deepseek]: "deepseek-chat" },
   customModel: {},
   display: 1,
 };
@@ -23,18 +21,14 @@ describe("validateConfig — 纯配置校验（不读 config、不弹 toast）",
     expect(r.reason).toContain("令牌");
   });
 
-  it("DeepLX 令牌可选：缺 token 仍通过", () => {
-    expect(validateConfig({ ...ok, service: services.deeplx, token: {}, model: {} }).valid).toBe(true);
-  });
-
-  it("文心一言缺 AK/SK → 不通过", () => {
-    expect(validateConfig({ ...ok, service: services.yiyan, model: { [services.yiyan]: "ERNIE" }, ak: "", sk: "" }).valid).toBe(false);
-  });
-
-  it("腾讯云缺密钥 → 不通过", () => {
-    const r = validateConfig({ ...ok, service: services.tencent, tencentSecretId: "", tencentSecretKey: "" });
+  it("已移除的服务不能通过校验", () => {
+    const r = validateConfig({ ...ok, service: "deeplx" });
     expect(r.valid).toBe(false);
-    expect(r.reason).toContain("腾讯云");
+    expect(r.reason).toContain("重新选择");
+  });
+
+  it.each([services.microsoft, services.google, services.chromeTranslator])("%s 不需要令牌和模型", (service) => {
+    expect(validateConfig({ ...ok, service, token: {}, model: {} }).valid).toBe(true);
   });
 
   it("AI 服务缺模型 → 不通过", () => {

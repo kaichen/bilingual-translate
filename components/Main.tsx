@@ -8,6 +8,7 @@ import { Config } from '@/entrypoints/config/model';
 import { parseHotkey } from './hotkey';
 import { type BackgroundMessage, type ContentMessage, type ContextMenuTranslateResponse, type TranslationProgressResponse, type PageDomainResponse, type PageTranslatedResponse } from '@/entrypoints/utils/messages';
 import CustomHotkeyInput from './CustomHotkeyInput';
+import ChromeAISettings from './ChromeAISettings';
 import './Main.css';
 
 type ToastType = 'success' | 'warning' | 'error';
@@ -21,18 +22,13 @@ type SelectOption = {
 };
 
 function cloneConfig(source: Config): Config {
-  return Object.assign(new Config(), JSON.parse(JSON.stringify(source)));
+  return new Config(JSON.parse(JSON.stringify(source)));
 }
 
 function validateConfig(configData: unknown): configData is Partial<Config> {
   if (typeof configData !== 'object' || configData === null) return false;
   const requiredFields = ['on', 'service', 'display', 'from', 'to'];
   return requiredFields.every((field) => field in configData);
-}
-
-function isValidAzureEndpoint(endpoint: string) {
-  if (!endpoint || endpoint.trim() === '') return false;
-  return endpoint.startsWith('https://') && endpoint.includes('openai.azure.com') && endpoint.includes('/chat/completions');
 }
 
 function SelectControl({
@@ -65,17 +61,15 @@ function TextInput({
   onChange,
   type = 'text',
   placeholder,
-  invalid = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   type?: 'text' | 'password' | 'url';
   placeholder?: string;
-  invalid?: boolean;
 }) {
   return (
     <input
-      className={`bt-input ${invalid ? 'input-error' : ''}`}
+      className="bt-input"
       value={value}
       type={type}
       placeholder={placeholder}
@@ -172,10 +166,7 @@ export default function Main() {
 
   useEffect(() => {
     const applyStoredConfig = (value: unknown) => {
-      const nextConfig = new Config();
-      if (typeof value === 'string' && value) {
-        Object.assign(nextConfig, JSON.parse(value));
-      }
+      const nextConfig = new Config(typeof value === 'string' && value ? JSON.parse(value) : {});
       nextConfig.on = true;
       suppressPersistRef.current = true;
       setConfig(nextConfig);
@@ -251,7 +242,7 @@ export default function Main() {
     });
   }
 
-  function setMapField(mapName: 'token' | 'model' | 'customModel' | 'proxy' | 'robot_id' | 'system_role' | 'user_role', service: string, value: string) {
+  function setMapField(mapName: 'token' | 'model' | 'customModel' | 'proxy' | 'system_role' | 'user_role', service: string, value: string) {
     updateConfig((draft) => {
       draft[mapName] = { ...draft[mapName], [service]: value };
     });
@@ -416,7 +407,7 @@ export default function Main() {
         notify('error', '配置无效或格式不正确, 请检查!');
         return;
       }
-      const nextConfig = Object.assign(new Config(), parsedConfig);
+      const nextConfig = new Config(parsedConfig);
       nextConfig.on = true;
       suppressPersistRef.current = true;
       setConfig(nextConfig);
@@ -444,20 +435,14 @@ export default function Main() {
     const isAI = p?.kind === 'ai';
     return {
       showAI: isAI,
+      showNativeAI: need('nativeAI'),
       showProxy: need('proxy'),
       showModel: need('model'),
       showToken: need('token'),
-      showAkSk: need('aksk'),
-      showYoudao: need('youdaoKey'),
-      showTencent: need('tencentSecret'),
       model: models.get(config.service) || [],
       showCustom: config.service === services.custom,
-      showDeepLX: config.service === 'deeplx',
       showCustomModel: isAI && config.model[config.service] === '自定义模型',
       filteredServices: options.services.filter((serviceOption) => !(serviceOption.value === services.google && config.display !== 1)),
-      showRobotId: need('robotId'),
-      showNewAPI: need('newApiUrl'),
-      showAzureOpenaiEndpoint: need('azureEndpoint'),
     };
   }, [config]);
 
@@ -508,13 +493,20 @@ export default function Main() {
             </SettingRow>
           )}
 
-          <SettingRow label="翻译服务" hint="机器翻译：快速稳定；AI翻译：更自然流畅，需要配置令牌">
+          <SettingRow label="翻译服务" hint="机器翻译：快速稳定；云端 AI 需要令牌；Chrome 内置 AI 在本地运行">
             <SelectControl value={config.service} options={computed.filteredServices} onChange={(value) => setField('service', value)} />
           </SettingRow>
 
           <SettingRow label="目标语言">
             <SelectControl value={config.to} options={options.to} onChange={(value) => setField('to', value)} />
           </SettingRow>
+
+          {computed.showNativeAI && <ChromeAISettings
+            key={`${config.chromeTranslationEngine}:${config.from}:${config.to}`}
+            settings={{ engine: config.chromeTranslationEngine, from: config.from, to: config.to }}
+            onEngine={value => setField('chromeTranslationEngine', value)}
+            onSource={value => setField('from', value)}
+          />}
 
           <SettingRow label="鼠标悬浮快捷键" hint="按住指定快捷键并悬停在文本上进行翻译">
             <div className="bt-hotkey-config">
@@ -536,74 +528,9 @@ export default function Main() {
             </SettingRow>
           )}
 
-          {computed.showAzureOpenaiEndpoint && (
-            <SettingRow label="Azure 端点" hint="Azure OpenAI 服务端点地址，必须包含完整的部署信息">
-              <TextInput
-                value={config.azureOpenaiEndpoint}
-                placeholder="https://your-resource.openai.azure.com/openai/deployments/your-model/chat/completions?api-version=2024-02-15-preview"
-                invalid={Boolean(config.azureOpenaiEndpoint && !isValidAzureEndpoint(config.azureOpenaiEndpoint))}
-                onChange={(value) => setField('azureOpenaiEndpoint', value)}
-              />
-              {config.azureOpenaiEndpoint && !isValidAzureEndpoint(config.azureOpenaiEndpoint) && (
-                <div className="error-text">端点地址格式不正确，请确保包含 openai.azure.com 域名和 /chat/completions 路径</div>
-              )}
-            </SettingRow>
-          )}
-
-          {computed.showDeepLX && (
-            <SettingRow label="服务地址" hint="DeepLX API 服务地址，默认为本地地址">
-              <TextInput value={config.deeplx} placeholder="http://localhost:1188/translate" onChange={(value) => setField('deeplx', value)} />
-            </SettingRow>
-          )}
-
-          {computed.showAkSk && (
-            <>
-              <SettingRow label="API Key" hint="百度文心一言API密钥对">
-                <TextInput value={config.ak} placeholder="请输入Access Key" onChange={(value) => setField('ak', value)} />
-              </SettingRow>
-              <SettingRow label="Secret Key" hint="百度文心一言API密钥对">
-                <TextInput value={config.sk} type="password" placeholder="请输入Secret Key" onChange={(value) => setField('sk', value)} />
-              </SettingRow>
-            </>
-          )}
-
-          {computed.showYoudao && (
-            <>
-              <SettingRow label="App Key" hint="有道智云翻译API应用ID">
-                <TextInput value={config.youdaoAppKey} placeholder="有道 AppKey" onChange={(value) => setField('youdaoAppKey', value)} />
-              </SettingRow>
-              <SettingRow label="App Secret" hint="有道智云翻译API应用密钥">
-                <TextInput value={config.youdaoAppSecret} type="password" placeholder="有道 AppSecret" onChange={(value) => setField('youdaoAppSecret', value)} />
-              </SettingRow>
-            </>
-          )}
-
-          {computed.showTencent && (
-            <>
-              <SettingRow label="Secret ID" hint="腾讯云API访问密钥ID">
-                <TextInput value={config.tencentSecretId} placeholder="腾讯云 SecretId" onChange={(value) => setField('tencentSecretId', value)} />
-              </SettingRow>
-              <SettingRow label="Secret Key" hint="腾讯云API访问密钥">
-                <TextInput value={config.tencentSecretKey} type="password" placeholder="腾讯云 SecretKey" onChange={(value) => setField('tencentSecretKey', value)} />
-              </SettingRow>
-            </>
-          )}
-
-          {computed.showRobotId && (
-            <SettingRow label="机器人ID" hint="Coze机器人ID">
-              <TextInput value={config.robot_id[config.service] || ''} placeholder="请输入Coze机器人ID" onChange={(value) => setMapField('robot_id', config.service, value)} />
-            </SettingRow>
-          )}
-
           {computed.showCustom && (
             <SettingRow label="自定义接口" hint="目前仅支持OpenAI格式的请求接口">
               <TextInput value={config.custom} placeholder="请输入自定义接口地址" onChange={(value) => setField('custom', value)} />
-            </SettingRow>
-          )}
-
-          {computed.showNewAPI && (
-            <SettingRow label="NewAPI接口" hint="填写 New API 的访问地址，如：http://localhost:3000">
-              <TextInput value={config.newApiUrl} placeholder="请输入您的New API接口地址" onChange={(value) => setField('newApiUrl', value)} />
             </SettingRow>
           )}
 
@@ -619,7 +546,7 @@ export default function Main() {
           )}
 
           {computed.showCustomModel && (
-            <SettingRow label={config.service === 'doubao' ? '接入点' : '自定义模型'} hint="自定义模型名称需要与服务商提供的模型名称一致">
+            <SettingRow label="自定义模型" hint="自定义模型名称需要与服务商提供的模型名称一致">
               <TextInput value={config.customModel[config.service] || ''} placeholder="例如：gemma:7b" onChange={(value) => setMapField('customModel', config.service, value)} />
             </SettingRow>
           )}

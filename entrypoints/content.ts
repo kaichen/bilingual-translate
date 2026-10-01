@@ -7,7 +7,6 @@ import { config, configReady } from "@/entrypoints/config/config";
 import { cancelAllTranslations } from "@/entrypoints/translate/translateApi";
 import { getTranslationActivity } from "@/entrypoints/translate/translateQueue";
 import { getDomainKey } from "@/entrypoints/utils/domain";
-import { mountNewApiComponent } from "@/entrypoints/main/newApi";
 import { mountSubstackSubtitleTranslation, mountYouTubeSubtitleTranslation } from "@/entrypoints/main/youtube-subtitle";
 import { parseHoverHotkey, eventMainKeyToken, isHoverMatch } from "@/entrypoints/main/trigger";
 import { type ContentMessage, type BackgroundMessage } from "@/entrypoints/utils/messages";
@@ -23,7 +22,6 @@ export default defineContentScript({
         const alwaysOnSite = (config.autoTranslateDomains || []).includes(getDomainKey(location.href));
         if (config.autoTranslate || alwaysOnSite) autoTranslationEvent();
         
-        mountNewApiComponent();
         mountYouTubeSubtitleTranslation();
         mountSubstackSubtitleTranslation();
 

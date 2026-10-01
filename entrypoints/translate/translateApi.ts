@@ -9,12 +9,17 @@ import { config } from '../config/config';
 import { cache } from './cache';
 import { shouldSkipTranslation } from '../utils/common';
 import { storage } from '@wxt-dev/storage';
+import { TranslationCancelledError } from './errors';
+import { servicesType } from '../providers/registry';
+import type { ChromeTranslationResponse, TranslateRequest } from '../utils/messages';
 
 // 调试相关
 const isDev = process.env.NODE_ENV === 'development';
 
 // 把并发上限的实时读取注入翻译队列（队列本身不 import config，保持可单测）
-configureQueue(() => config.maxConcurrentTranslations);
+configureQueue(() => servicesType.isNativeAI(config.service) ? 1 : config.maxConcurrentTranslations);
+const activeChromeRequests = new Set<string>();
+if (typeof window !== 'undefined') window.addEventListener('pagehide', cancelAllTranslations);
 
 /**
  * 翻译API的统一入口
@@ -54,18 +59,41 @@ export async function translateText(origin: string, context: string = document.t
   // 保存配置以确保计数持久化
   storage.setItem('local:config', JSON.stringify(config));
 
+  const nativeSettings = servicesType.isNativeAI(config.service) ? {
+    engine: config.chromeTranslationEngine, from: config.from, to: config.to,
+  } : undefined;
+
   // 使用队列处理翻译请求
   return enqueueTranslation(async () => {
     // 创建翻译任务
     const translationTask = async (retryCount: number = 0): Promise<string> => {
       try {
-        // 发送翻译请求给background脚本处理
-        const result = await Promise.race([
-          browser.runtime.sendMessage({ context, origin }),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('翻译请求超时')), timeout)
-          )
-        ]) as string;
+        // 原生推理的计时与中止由后台负责，等待跨页面队列时不消耗推理时限。
+        let result: string;
+        if (nativeSettings) {
+          const requestId = crypto.randomUUID();
+          activeChromeRequests.add(requestId);
+          try {
+            const response = await browser.runtime.sendMessage({ context, origin, requestId, timeout, chromeAI: nativeSettings } satisfies TranslateRequest) as ChromeTranslationResponse;
+            if (!response.success) {
+              if (response.cancelled) throw new TranslationCancelledError();
+              throw new Error(response.error);
+            }
+            result = response.result;
+          } finally {
+            activeChromeRequests.delete(requestId);
+          }
+        } else {
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          try {
+            result = await Promise.race([
+              browser.runtime.sendMessage({ context, origin }),
+              new Promise<never>((_, reject) => {
+                timer = setTimeout(() => reject(new Error('翻译请求超时')), timeout);
+              }),
+            ]) as string;
+          } finally { clearTimeout(timer); }
+        }
 
         // 如果翻译结果为空或与原文完全相同，直接返回原文
         if (!result || result === origin) {
@@ -73,14 +101,15 @@ export async function translateText(origin: string, context: string = document.t
         }
 
         // 缓存翻译结果
-        if (useCache) {
+        if (useCache && (!nativeSettings || (servicesType.isNativeAI(config.service)
+          && config.chromeTranslationEngine === nativeSettings.engine && config.from === nativeSettings.from && config.to === nativeSettings.to))) {
           cache.localSet(origin, result);
         }
 
         return result;
       } catch (error) {
         // 处理错误，根据重试策略决定是否重试
-        if (retryCount < maxRetries) {
+        if (!nativeSettings && retryCount < maxRetries) {
           if (isDev) {
             console.log(`[翻译API] 翻译失败，${retryCount + 1}/${maxRetries} 次重试，原因:`, error);
           }
@@ -108,6 +137,9 @@ export function cancelAllTranslations() {
     console.log('[翻译API] 取消所有等待中的翻译任务');
   }
   clearTranslationQueue();
+  for (const requestId of activeChromeRequests) {
+    void browser.runtime.sendMessage({ type: 'cancelChromeTranslation', requestId }).catch(() => {});
+  }
 }
 
 /**

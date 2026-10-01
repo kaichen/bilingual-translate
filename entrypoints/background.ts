@@ -1,8 +1,13 @@
 import {_service} from "@/entrypoints/providers/service";
-import {config} from "@/entrypoints/config/config";
+import {config, configReady} from "@/entrypoints/config/config";
 import {CONTEXT_MENU_IDS} from "@/entrypoints/utils/constant";
 import {type BackgroundMessage, type TranslateRequest} from "@/entrypoints/utils/messages";
 import {microsoftTranslate} from "@/entrypoints/providers/translate/microsoft";
+
+import { chromeAI } from '@/entrypoints/providers/translate/chrome-builtin-ai';
+
+// 原生请求由发送上下文隔离，取消只影响当前页面的任务。
+const chromeRequests = new Map<string, AbortController>();
 
 // 翻译状态管理
 let translationStateMap = new Map<number, boolean>(); // tabId -> isTranslated
@@ -116,14 +121,30 @@ export default defineBackground({
         // 监听标签页关闭事件，清理状态
         browser.tabs.onRemoved.addListener((tabId: any) => {
             translationStateMap.delete(tabId);
+            for (const [key, controller] of chromeRequests) {
+                if (key.startsWith(`${tabId}:`)) controller.abort(new Error('页面已关闭'));
+            }
         });
 
         // 处理消息：带 type 的是指令消息（穷尽 switch），无 type 的是普通翻译请求（交 _service 分发）
-        browser.runtime.onMessage.addListener((message: BackgroundMessage | TranslateRequest) => {
+        browser.runtime.onMessage.addListener((message: BackgroundMessage | TranslateRequest, sender: chrome.runtime.MessageSender) => {
             return new Promise(async (resolve, reject) => {
                 try {
+                    await configReady;
+                    const requestOwner = `${sender.tab?.id ?? 'popup'}:${sender.frameId ?? 0}:${sender.documentId ?? ''}`;
                     if ('type' in message) {
                         switch (message.type) {
+                            case 'getChromeAIStatus':
+                                resolve(await chromeAI.status(message.settings));
+                                return;
+                            case 'initializeChromeAI':
+                                await chromeAI.initialize(message.settings);
+                                resolve({ success: true });
+                                return;
+                            case 'cancelChromeTranslation':
+                                chromeRequests.get(`${requestOwner}:${message.requestId}`)?.abort(new Error('翻译已取消'));
+                                resolve({ success: true });
+                                return;
                             case 'getTranslationState':
                                 resolve({ isTranslated: translationStateMap.get(message.tabId) || false });
                                 return;
@@ -138,6 +159,22 @@ export default defineBackground({
                                 resolve({ success: true, translatedText });
                                 return;
                             }
+                        }
+                        return;
+                    }
+
+                    if (message.chromeAI) {
+                        if (!message.requestId) throw new Error('Chrome 翻译请求缺少编号');
+                        const key = `${requestOwner}:${message.requestId}`;
+                        const controller = new AbortController();
+                        chromeRequests.set(key, controller);
+                        try {
+                            const result = await chromeAI.translate(message.origin, message.chromeAI, controller.signal, message.timeout);
+                            resolve({ success: true, result });
+                        } catch (error) {
+                            resolve({ success: false, error: error instanceof Error ? error.message : String(error), cancelled: controller.signal.aborted });
+                        } finally {
+                            chromeRequests.delete(key);
                         }
                         return;
                     }

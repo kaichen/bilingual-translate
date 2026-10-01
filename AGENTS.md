@@ -4,7 +4,7 @@
 
 ## 项目简介
 
-**bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、全文翻译、悬停翻译、输入框翻译，集成 20+ 翻译引擎（机器翻译 + AI 大模型）。
+**bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、全文翻译、悬停翻译、输入框翻译，支持微软、谷歌、Chrome 内置 AI、自定义接口、DeepSeek、OpenRouter 六个翻译服务。
 
 技术栈：**WXT 0.20** + **Preact 10** + **TypeScript**，浏览器扩展 Manifest V3，目标 Chrome / Edge。
 
@@ -34,7 +34,6 @@ entrypoints/
     dom.ts             # 节点抓取核心：grabNode / grabAllNode，块级/内联/跳过判定
     trans.ts           # 翻译执行：悬停翻译、全文翻译(IntersectionObserver)、还原原文
     skip.ts            # 翻译相关 DOM 判定：skipNode / hasLoadingSpinner / searchClassName
-    newApi.ts          # New API 配置预填（content 脚本里的 DOM 事件桥）
     trigger.ts         # 悬停触发纯逻辑：parseHoverHotkey / eventMainKeyToken / isHoverMatch
     youtube-subtitle.ts # YouTube 字幕翻译：json3 解析/去重 → translateText → 双语浮层 → 跟随原生 CC
     site-rules/        # 站点规则注册表：siteRules 单一真相源（index.ts 引擎 + 每站一文件）
@@ -42,7 +41,6 @@ entrypoints/
   translate/           # 翻译管线：translateApi(入口) · translateQueue(并发队列) · cache · cache-key
   providers/           # 翻译服务：registry(元数据) · service(分发) · translate/(机翻) · llm/(大模型，含 template)
   ui/                  # 页面注入 UI：tip(toast) · icon(spinner/失败提示)
-  offscreen/           # Chrome 内置 Translation API 的 offscreen 文档
   popup/               # 设置面板入口（App.tsx → Header/Main/Footer）
   utils/               # 横切残余：messages(消息契约) · common(throttle/语言检测/getCenterPoint) · constant · declare.d
 components/            # Preact 组件(Main/Header/Footer/CustomHotkeyInput) + hotkey.ts(快捷键解析/校验/预设)
@@ -74,9 +72,9 @@ styles/ + entrypoints/style.css   # 主题变量与译文样式
 
 ## 添加一个新翻译服务
 
-1. `providers/registry.ts`：在 `PROVIDERS` 加一条记录 —— `name`（用 `services` 里的键）、`kind`（machine/ai）、`url?`（静态翻译 endpoint，动态拼接/无 fetch 的留空）、`models?`、`needs`（能力词表：token/model/proxy/customUrl/aksk/youdaoKey/tencentSecret/azureEndpoint/robotId/newApiUrl）。`servicesType`/`urls`/`models` 由此自动派生。
+1. `providers/registry.ts`：在 `PROVIDERS` 加一条记录 —— `name`（用 `services` 里的键）、`kind`（machine/ai）、`url?`（静态翻译 endpoint，动态拼接/无 fetch 的留空）、`models?`、`needs`（能力词表：token/model/proxy/customUrl/nativeAI）。`servicesType`/`urls`/`models` 由此自动派生。
 2. `config/option.ts`：在 `services` 加键；在 `options.services` 加下拉项（展示顺序/分组/label 手写）。
-3. AI 大模型服务：在 `providers/llm/chat.ts` 的 `chatServices` 加一项 —— 缺省即 OpenAI 兼容，差异用 `onRequest`/`onResponse` 钩子表达（见 `CONTEXT.md` 的 chat-completion adapter）。带重辅助逻辑（自定义签名/OAuth）或机器翻译风格的，才新建独立 `providers/<translate|llm>/<name>.ts` 实现 `async function(message) => string`。
+3. AI 大模型服务：在 `providers/llm/chat.ts` 的 `chatServices` 加一项 —— 缺省即 OpenAI 兼容，差异用 `onRequest`/`onResponse` 钩子表达（见 `CONTEXT.md` 的 chat-completion adapter）。机器翻译风格的，才新建独立 `providers/<translate|llm>/<name>.ts` 实现 `async function(message) => string`。
 4. `providers/service.ts`：独立文件需在分发表注册（`chatServices` 已自动并入）。
 5. 如需特殊请求体，在 `providers/llm/template.ts` 加模板。
 6. `pnpm test`（`providers.test.ts` 校验下拉↔注册表一致、needs 合法）+ `pnpm compile` 验证。

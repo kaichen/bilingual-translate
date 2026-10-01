@@ -21,6 +21,7 @@ import {
 import { shouldSkipTranslation, throttle } from "@/entrypoints/utils/common";
 import { getMainDomain, getSiteRule } from "@/entrypoints/main/site-rules";
 import { config } from "@/entrypoints/config/config";
+import { TranslationCancelledError } from '@/entrypoints/translate/errors';
 import { translateText, cancelAllTranslations } from '@/entrypoints/translate/translateApi';
 
 let hoverTimer: any; // 鼠标悬停计时器
@@ -678,6 +679,7 @@ function bilingualTranslate(node: any, nodeOuterHTML: any) {
         })
         .catch((error: Error) => {
             spinner.remove();
+            if (error instanceof TranslationCancelledError) return;
             insertFailedTip(node, error.toString() || "翻译失败", spinner);
         });
 }
@@ -697,7 +699,7 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
             appendBilingualTranslationForTarget(target, text);
         })
         .catch((error: Error) => {
-            console.error('翻译失败:', error);
+            if (!(error instanceof TranslationCancelledError)) console.error('翻译失败:', error);
         });
 }
 
@@ -705,7 +707,8 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
 export function singleTranslate(node: any) {
     if (shouldSkipTranslation(node.textContent, config.to)) return;
 
-    let origin = servicesType.isMachine(config.service) ? node.innerHTML : LLMStandardHTML(node);
+    let origin = servicesType.isAI(config.service) || (servicesType.isNativeAI(config.service) && config.chromeTranslationEngine === 'prompt')
+        ? LLMStandardHTML(node) : node.innerHTML;
     let spinner = insertLoadingSpinner(node);
     
     // 使用队列管理的翻译API
@@ -728,6 +731,7 @@ export function singleTranslate(node: any) {
         })
         .catch((error: Error) => {
             spinner.remove();
+            if (error instanceof TranslationCancelledError) return;
             insertFailedTip(node, error.toString() || "翻译失败", spinner);
         });
 }

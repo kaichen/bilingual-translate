@@ -1,9 +1,13 @@
+import type { ChromeAISettings } from '../providers/chrome-ai-types';
+
 // content / background / popup 之间的消息契约（可辨识联合，type 为判别字段）。
-// 不含 offscreen 的 CHROME_TRANSLATE_OFFSCREEN —— 它走独立的 chrome.runtime 通道，与主消息总线无关。
 // 纯类型模块：无运行时代码，价值在编译期对齐收发两端。
 
 // —— 发往 background 的指令消息 ——
 export type BackgroundMessage =
+    | { type: 'getChromeAIStatus'; settings: ChromeAISettings }
+    | { type: 'initializeChromeAI'; settings: ChromeAISettings }
+    | { type: 'cancelChromeTranslation'; requestId: string }
     | { type: 'getTranslationState'; tabId: number }
     | { type: 'setTranslationState'; tabId: number; isTranslated: boolean }
     | { type: 'inputBoxTranslation'; text: string; targetLang: string };
@@ -22,6 +26,9 @@ export type ExtMessage = BackgroundMessage | ContentMessage;
 export interface TranslateRequest {
     context: string;
     origin: string;
+    requestId?: string;
+    timeout?: number;
+    chromeAI?: ChromeAISettings;
 }
 
 // —— 响应 ——
@@ -55,3 +62,7 @@ export interface InputBoxTranslationResponse {
     translatedText?: string;
     error?: string;
 }
+
+export type ChromeTranslationResponse =
+    | { success: true; result: string }
+    | { success: false; error: string; cancelled?: boolean };

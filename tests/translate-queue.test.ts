@@ -37,6 +37,19 @@ describe("translateQueue — 并发控制（注入 max）", () => {
     await expect(enqueueTranslation(async () => "after")).resolves.toBe("after");
   });
 
+  it('取消时等待任务也结束，活跃任务继续正常结算', async () => {
+    configureQueue(() => 1);
+    let release!: () => void;
+    const first = enqueueTranslation(() => new Promise<void>(resolve => { release = resolve; }));
+    const pending = enqueueTranslation(async () => '不应执行');
+    const cancelled = expect(pending).rejects.toThrow('取消');
+    clearTranslationQueue();
+    await cancelled;
+    release();
+    await first;
+    await expect(enqueueTranslation(async () => '下一任务')).resolves.toBe('下一任务');
+  });
+
   it("canAcceptMoreTasks 在队列未超 max*3 时为 true", () => {
     expect(canAcceptMoreTasks()).toBe(true);
   });

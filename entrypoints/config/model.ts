@@ -1,12 +1,10 @@
 import { defaultOption, services } from "./option";
+import { providerOf } from "@/entrypoints/providers/registry";
+
+import type { ChromeTranslationEngine } from '@/entrypoints/providers/chrome-ai-types';
 
 interface IMapping {
     [key: string]: string;
-}
-
-// 内包，存储额外信息
-interface IExtra {
-    [key: string]: any
 }
 
 export class Config {
@@ -22,36 +20,24 @@ export class Config {
     style: number;
     display: number = 1;
     service: string;
+    chromeTranslationEngine: ChromeTranslationEngine; // Chrome 原生翻译或 Prompt 大模型
     token: IMapping;
-    ak: string;
-    sk: string;
-    appid: string;
-    key: string;
     model: IMapping;
     customModel: IMapping;  // 自定义模型名称
     proxy: IMapping;  // 代理地址
     custom: string; // 本地服务地址
-    extra: IExtra;  // 额外信息（内包信息）
-    robot_id: IMapping;  // 机器人 ID（兼容 coze）
     system_role: IMapping;
     user_role: IMapping;
     count: number;  // 翻译次数
     theme: string;  // 主题模式：'auto' | 'light' | 'dark'
     useCache: boolean; // 是否使用缓存
     customHotkey: string; // 自定义鼠标悬浮快捷键
-    deeplx: string; // DeepLX 服务地址
-    newApiUrl: string; // NewAPI地址
     maxConcurrentTranslations: number; // 最大并发翻译数量
-    youdaoAppKey: string; // 有道翻译 App Key
-    youdaoAppSecret: string; // 有道翻译 App Secret
-    tencentSecretId: string; // 腾讯云 Secret ID
-    tencentSecretKey: string; // 腾讯云 Secret Key
-    azureOpenaiEndpoint: string; // Azure OpenAI 端点地址
     animations: boolean; // 是否启用动画效果
     inputBoxTranslationTrigger: string; // 输入框翻译触发方式
     inputBoxTranslationTarget: string; // 输入框翻译目标语言
 
-    constructor() {
+    constructor(values: Partial<Config> = {}) {
         this.on = true;
         this.autoTranslate = false;
         this.autoTranslateDomains = [];
@@ -64,34 +50,32 @@ export class Config {
         this.display = defaultOption.display;
         this.hotkey = defaultOption.hotkey;
         this.service = defaultOption.service;
+        this.chromeTranslationEngine = defaultOption.chromeTranslationEngine;
         this.token = {};
-        this.ak = '';
-        this.sk = '';
-        this.appid = '';
-        this.key = '';
         this.model = {};
         this.customModel = {};
         this.proxy = {};
         this.custom = defaultOption.custom;
-        this.extra = {};
-        this.robot_id = {};
         this.system_role = systemRoleFactory();
         this.user_role = userRoleFactory();
         this.count = 0;
         this.theme = 'auto';  // 默认跟随系统
         this.useCache = true; // 默认开启缓存
         this.customHotkey = ''; // 自定义鼠标悬浮快捷键为空
-        this.deeplx = ''; // DeepLX 默认服务地址
-        this.newApiUrl = 'http://localhost:3000'; // NewAPI 默认地址
         this.maxConcurrentTranslations = 6; // 默认最大并发数为6
-        this.youdaoAppKey = ''; // 有道翻译 App Key
-        this.youdaoAppSecret = ''; // 有道翻译 App Secret
-        this.tencentSecretId = ''; // 腾讯云 Secret ID
-        this.tencentSecretKey = ''; // 腾讯云 Secret Key
-        this.azureOpenaiEndpoint = ''; // Azure OpenAI 端点地址
         this.animations = true; // 默认启用动画
         this.inputBoxTranslationTrigger = 'disabled'; // 默认关闭输入框翻译
         this.inputBoxTranslationTarget = 'en'; // 默认翻译成英文
+
+        // 只载入现有配置字段，忽略已移除服务的专属设置。
+        for (const key of Object.keys(this) as (keyof Config)[]) {
+            if (key in values) Object.assign(this, {[key]: values[key]});
+        }
+        for (const key of ['token', 'model', 'customModel', 'proxy', 'system_role', 'user_role'] as const) {
+            this[key] = Object.fromEntries(Object.entries(this[key]).filter(([service]) => providerOf(service)));
+        }
+        if (!['translator', 'prompt'].includes(this.chromeTranslationEngine)) this.chromeTranslationEngine = defaultOption.chromeTranslationEngine;
+        if (!providerOf(this.service)) this.service = defaultOption.service;
     }
 }
 

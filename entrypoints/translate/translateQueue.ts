@@ -3,11 +3,13 @@
  * 控制并发翻译任务的数量，避免同时进行过多翻译请求
  */
 
+import { TranslationCancelledError } from './errors';
+
 // 注意：本模块刻意不 import config —— 并发上限由 configureQueue 边缘注入，以保持纯队列逻辑可单测
 
 // 队列状态
 let activeTranslations = 0; // 当前活跃的翻译任务数量
-let pendingTranslations: Array<() => Promise<any>> = []; // 等待执行的翻译任务队列
+let pendingTranslations: Array<{ run: () => Promise<any>; cancel: () => void }> = []; // 等待执行的翻译任务队列
 
 // 调试相关
 const isDev = process.env.NODE_ENV === 'development';
@@ -57,7 +59,7 @@ export function enqueueTranslation<T>(translationTask: () => Promise<T>): Promis
       activeTranslations++;
       taskWrapper();
     } else {
-      pendingTranslations.push(taskWrapper);
+      pendingTranslations.push({ run: taskWrapper, cancel: () => reject(new TranslationCancelledError()) });
     }
   });
 }
@@ -71,7 +73,7 @@ function processQueue() {
     const nextTask = pendingTranslations.shift();
     if (nextTask) {
       activeTranslations++;
-      nextTask().catch(() => {
+      nextTask.run().catch(() => {
         // 错误已在任务内部处理，这里仅防止未捕获的Promise异常
       });
     }
@@ -84,7 +86,9 @@ function processQueue() {
  */
 export function clearTranslationQueue() {
   
+  const cancelled = pendingTranslations;
   pendingTranslations = [];
+  cancelled.forEach(task => task.cancel());
   // 不重置activeTranslations，让活跃的翻译任务自然完成
 }
 

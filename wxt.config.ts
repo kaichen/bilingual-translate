@@ -19,7 +19,7 @@ export default defineConfig({
     manifest: {
         name: 'bilingual translate',
         short_name: 'bilingual translate',
-        permissions: ['storage', 'contextMenus', 'offscreen'],
+        permissions: ['storage', 'contextMenus'],
     },
 
 });

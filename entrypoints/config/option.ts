@@ -1,44 +1,20 @@
 export const services = {
     // 传统机器翻译
     microsoft: "microsoft",
-    deepL: "deepL",
-    deeplx: "deeplx",
     google: "google",
-    xiaoniu: "xiaoniu",
-    youdao: "youdao",
-    tencent: "tencent", // 腾讯云机器翻译
-    // 大模型翻译
-    openai: "openai",
-    azureOpenai: "azureOpenai", // Azure OpenAI
-    gemini: "gemini",
-    yiyan: "yiyan",
-    tongyi: "tongyi",
-    zhipu: "zhipu",
-    moonshot: "moonshot",
-    claude: "claude",
-    custom: "custom",
-    infini: "infini",
-    // baidu: 'baidu',
-    baichuan: "baichuan",
-    lingyi: "lingyi",
-    deepseek: "deepseek",
-    minimax: "minimax",
-    jieyue: "jieyue", // 阶跃星辰
-    groq: "groq",
-    cozecom: "cozecom", // coze 支持机器人不支持模型
-    cozecn: "cozecn",
-    huanYuan: "huanYuan", // 腾讯混元
-    huanYuanTranslation: "huanYuanTranslation", // 腾讯混元翻译大模型
-    doubao: "doubao", // 字节豆包
-    siliconCloud: "siliconCloud", // 硅流
-    openrouter: "openrouter", // openrouter
-    grok: "grok", // X.AI 的 Grok
-    newapi: "newapi", // New API 接口
     chromeTranslator: "chromeTranslator", // Chrome 内置翻译 API
+    // 大模型翻译
+    custom: "custom",
+    deepseek: "deepseek",
+    openrouter: "openrouter",
 };
 
 export const customModelString = "自定义模型";
 export const options = {
+    chromeTranslationEngine: [
+        {value: 'translator', label: '原生翻译'},
+        {value: 'prompt', label: '内置大模型（Gemma 4）'},
+    ],
     // 是否即时翻译
     autoTranslate: [
         {value: true, label: "开启"},
@@ -88,38 +64,11 @@ export const options = {
         {value: "machine", label: "机器翻译", disabled: true},
         {value: services.microsoft, label: "微软翻译"},
         {value: services.google, label: "谷歌翻译"},
-        {value: services.deepL, label: "DeepL"},
-        {value: services.deeplx, label: "DeepLX"},
-        {value: services.xiaoniu, label: "小牛翻译"},
-        {value: services.youdao, label: "有道翻译"},
-        {value: services.tencent, label: "腾讯云翻译"},
         // 大模型翻译
         {value: "ai", label: "AI翻译", disabled: true},
         {value: services.chromeTranslator, label: "Chrome内置AI翻译⭐"},
-        {value: services.siliconCloud, label: "硅基流动⭐️"},
-        {value: services.huanYuan, label: "腾讯混元⭐"},
-        {value: services.newapi, label: "New API"},
         {value: services.deepseek, label: "DeepSeek️"},
-        {value: services.openai, label: "OpenAI"},
-        {value: services.azureOpenai, label: "Azure OpenAI"},
-        {value: services.huanYuanTranslation, label: "腾讯混元翻译"},
-        {value: services.tongyi, label: "阿里通义"},
-        {value: services.doubao, label: "字节豆包"},
-        {value: services.grok, label: "Grok (X.AI)"},
         {value: services.openrouter, label: "OpenRouter"},
-        {value: services.groq, label: "Groq"},
-        {value: services.moonshot, label: "Kimi"},
-        {value: services.zhipu, label: "智谱清言"},
-        {value: services.baichuan, label: "百川智能"},
-        {value: services.lingyi, label: "零一万物"},
-        {value: services.minimax, label: "MiniMax"},
-        {value: services.jieyue, label: "阶跃星辰"},
-        {value: services.infini, label: "无向芯穹"},
-        {value: services.cozecom, label: "Coze国际"},
-        {value: services.cozecn, label: "Coze国内"},
-        {value: services.claude, label: "Claude"},
-        {value: services.gemini, label: "Gemini"},
-        {value: services.yiyan, label: "文心一言"},
         {value: services.custom, label: "自定义接口⭐️"},
     ],
     display: [
@@ -177,8 +126,8 @@ export const defaultOption = {
     display: 1,
     hotkey: "Control",
     service: services.microsoft,
+    chromeTranslationEngine: "translator" as const,
     custom: "http://localhost:11434/v1/chat/completions",
-    deeplx: "http://localhost:1188/translate",
     system_role:
         "You are a professional, authentic machine translation engine.",
     user_role: `Translate the following text into {{to}}, If translation is unnecessary (e.g. proper nouns, codes, etc.), return the original text. NO explanations. NO notes:

@@ -21,7 +21,7 @@ async function loadConfig() {
             const parsedConfig = JSON.parse(value);
             if (isConfigObjectValid(parsedConfig)) {
                 // 如果配置有效，合并到当前 config 中
-                Object.assign(config, parsedConfig);
+                Object.assign(config, new Config(parsedConfig));
                 return; // 加载成功，直接返回
             }
         }
@@ -45,7 +45,7 @@ storage.watch('local:config', (newValue: any, oldValue: any) => {
             const parsedConfig = JSON.parse(newValue);
             if (isConfigObjectValid(parsedConfig)) {
                 // 如果新的配置有效，更新 config
-                Object.assign(config, parsedConfig);
+                Object.assign(config, new Config(parsedConfig));
             } else {
                 console.warn('An invalid configuration was detected in storage.watch. Ignoring.');
             }

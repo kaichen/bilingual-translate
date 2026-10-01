@@ -1,13 +1,9 @@
 import { customModelString, services } from "./option";
-import { servicesType } from "@/entrypoints/providers/registry";
+import { providerOf, servicesType } from "@/entrypoints/providers/registry";
 
 export interface ConfigCheckSnapshot {
     service: string;
     token: Record<string, string>;
-    ak: string;
-    sk: string;
-    tencentSecretId: string;
-    tencentSecretKey: string;
     model: Record<string, string>;
     customModel: Record<string, string>;
     display: number;
@@ -20,20 +16,13 @@ export interface ConfigCheckResult {
 
 // 翻译前校验配置完整性（纯函数：不读 config 单例、不弹 toast，返回结构化结果 → 可单测）
 export function validateConfig(c: ConfigCheckSnapshot): ConfigCheckResult {
-    // 1. 需要 token 的服务必须配置 token（DeepLX 的令牌可选）
-    if (servicesType.isUseToken(c.service) && !c.token[c.service] && c.service !== services.deeplx) {
+    if (!providerOf(c.service)) {
+        return { valid: false, reason: "翻译服务不可用，请前往设置页重新选择" };
+    }
+    if (servicesType.isUseToken(c.service) && !c.token[c.service]) {
         return { valid: false, reason: "令牌尚未配置，请前往设置页配置" };
     }
-    // 文心一言需要 AK + SK
-    if (c.service === services.yiyan && (!c.ak || !c.sk)) {
-        return { valid: false, reason: "令牌尚未配置，请前往设置页配置" };
-    }
-    // 腾讯云需要 SecretId + SecretKey
-    if (c.service === services.tencent && (!c.tencentSecretId || !c.tencentSecretKey)) {
-        return { valid: false, reason: "腾讯云机器翻译密钥尚未配置，请前往设置页配置SecretId和SecretKey" };
-    }
-    // 2. AI 服务（Coze 除外）必须选模型
-    if (servicesType.isAI(c.service) && ![services.cozecn, services.cozecom].includes(c.service)) {
+    if (servicesType.isUseModel(c.service)) {
         const model = c.model[c.service];
         const customModel = c.customModel[c.service];
         if (!model || (model === customModelString && !customModel)) {

@@ -39,12 +39,7 @@ vi.mock("@/entrypoints/config/option", () => ({
   customModelString: "custom",
   options: { styles: [] },
   services: {
-    deeplx: "deeplx",
-    yiyan: "yiyan",
-    tencent: "tencent",
     google: "google",
-    cozecn: "cozecn",
-    cozecom: "cozecom",
   },
   servicesType: {
     isAI: vi.fn(() => false),

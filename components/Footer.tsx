@@ -13,10 +13,7 @@ export default function Footer() {
 
   useEffect(() => {
     const applyConfig = (value: unknown) => {
-      const nextConfig = new Config();
-      if (typeof value === 'string' && value) {
-        Object.assign(nextConfig, JSON.parse(value));
-      }
+      const nextConfig = new Config(typeof value === 'string' && value ? JSON.parse(value) : {});
       setCount(nextConfig.count);
     };
 

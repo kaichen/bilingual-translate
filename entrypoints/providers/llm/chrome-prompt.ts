@@ -3,9 +3,10 @@ import type { NativeLanguageModel } from '../chrome-ai-types';
 // 修改翻译提示时同步递增，防止复用旧 Prompt 译文。
 export const CHROME_PROMPT_VERSION = 'prompt-v2';
 
-// 一次请求最多合并的段数与总字符数：减少调用次数，同时让单次推理远小于超时。
+// 一次请求最多合并的段数与总字符数。真机一句约 44 字符耗时 3.6 秒，
+// 整批共用一个 45 秒超时且失败时整批重试，所以总量保守取 400 字符。
 export const PROMPT_BATCH_MAX_SEGMENTS = 8;
-const PROMPT_BATCH_MAX_CHARS = 1200;
+const PROMPT_BATCH_MAX_CHARS = 400;
 const SEGMENT_MARKER = /\[\[(\d+)\]\]/;
 
 export function chromeSystemPrompt(target: string): string {

@@ -59,6 +59,8 @@ describe('Chrome 原生 AI', () => {
         await expect(service.translate('Hello', promptSettings, signal())).rejects.toThrow('Prompt API 不可用');
         apis.Translator!.availability = vi.fn(async () => 'unavailable' as const);
         expect(await service.status(translatorSettings)).toMatchObject({ availability: 'unavailable', message: expect.stringContaining('语言组合') });
+        apis.LanguageDetector!.availability = vi.fn(async () => 'unavailable' as const);
+        expect(await service.status(translatorSettings)).toMatchObject({ availability: 'unavailable', message: expect.stringContaining('语言检测不可用') });
         await expect(service.translate('Hello', translatorSettings, signal())).rejects.toThrow('不可用');
         expect(apis.Translator!.create).not.toHaveBeenCalled();
     });

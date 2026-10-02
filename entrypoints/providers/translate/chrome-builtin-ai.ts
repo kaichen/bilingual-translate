@@ -79,14 +79,16 @@ export class ChromeAIService {
     }
 
     // 区分「接口不存在」和「语言不支持」，让用户知道下一步该做什么。
-    private unavailableReason(settings: ChromeAISettings): string {
+    private async unavailableReason(settings: ChromeAISettings): Promise<string> {
         const api = this.apis();
         if (settings.engine === 'prompt') {
             if (!api.LanguageModel) return '当前 Chrome 没有开放内置大模型。请确认 Chrome 为 154 或更高版本，并按下方步骤开启 Gemma 4。';
         } else if (!api.Translator) {
             return '当前 Chrome 没有原生翻译 API，请升级 Chrome。';
         }
-        if (settings.from === 'auto' && !api.LanguageDetector) return '当前 Chrome 没有语言检测 API，请手动选择源语言。';
+        if (settings.from === 'auto' && (!api.LanguageDetector || await api.LanguageDetector.availability() === 'unavailable')) {
+            return '当前 Chrome 的语言检测不可用，请手动选择源语言。';
+        }
         return settings.engine === 'prompt'
             ? 'Chrome 大模型不支持所选语言。请按下方步骤开启多语言支持，或更换语言。'
             : '原生翻译不支持所选语言组合，请更换语言。';
@@ -97,7 +99,7 @@ export class ChromeAIService {
         if (this.preparing?.key === this.key(settings)) return { ...this.preparing.status };
         const availability = await this.availability(settings);
         const messages: Record<AIAvailability, string> = {
-            unavailable: this.unavailableReason(settings),
+            unavailable: availability === 'unavailable' ? await this.unavailableReason(settings) : '',
             downloadable: '模型尚未下载，点击下载并初始化后即可使用。',
             downloading: 'Chrome 正在下载模型…',
             available: settings.from === 'auto' ? '模型已就绪；实际源语言将在翻译时检查。' : '模型已就绪。',

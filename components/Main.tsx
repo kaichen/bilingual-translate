@@ -442,7 +442,11 @@ export default function Main() {
       model: models.get(config.service) || [],
       showCustom: config.service === services.custom,
       showCustomModel: isAI && config.model[config.service] === '自定义模型',
-      filteredServices: options.services.filter((serviceOption) => !(serviceOption.value === services.google && config.display !== 1)),
+      // 谷歌翻译仅支持双语模式：仅译文模式下置灰（当前已选中时保持可选，下拉才能显示当前值）
+      filteredServices: options.services.map((serviceOption) =>
+        serviceOption.value === services.google && config.display !== 1 && config.service !== services.google
+          ? { ...serviceOption, label: `${serviceOption.label}（仅双语模式）`, disabled: true }
+          : serviceOption),
     };
   }, [config]);
 
@@ -608,7 +612,7 @@ export default function Main() {
           <details className="bt-advanced-panel bt-fold">
             <summary><span className="bt-summary-text">更多功能</span></summary>
 
-            <SettingRow label="视频字幕翻译" hint="在 YouTube 或 Substack 播放器打开字幕时，于视频上叠加双语字幕">
+            <SettingRow label="视频字幕翻译" hint="在 YouTube 或 Substack 播放器打开字幕时，于视频上叠加双语字幕。字幕只使用机器翻译；当前服务是大模型时改用微软翻译">
               <SwitchControl checked={config.youtubeSubtitle} onChange={(value) => setField('youtubeSubtitle', value)} />
             </SettingRow>
 
@@ -624,12 +628,12 @@ export default function Main() {
               </SettingRow>
             )}
 
-            <SettingRow label="输入框翻译" hint="在任何文本输入框中使用指定方式触发翻译当前输入的内容">
+            <SettingRow label="输入框翻译" hint="在任何文本输入框中使用指定方式触发翻译当前输入的内容。固定使用微软翻译">
               <SelectControl value={config.inputBoxTranslationTrigger} options={options.inputBoxTranslationTrigger} onChange={(value) => setField('inputBoxTranslationTrigger', value)} />
             </SettingRow>
 
             {config.inputBoxTranslationTrigger !== 'disabled' && (
-              <SettingRow label="翻译目标语言">
+              <SettingRow label="输入框目标语言">
                 <SelectControl value={config.inputBoxTranslationTarget} options={options.inputBoxTranslationTarget} onChange={(value) => setField('inputBoxTranslationTarget', value)} />
               </SettingRow>
             )}

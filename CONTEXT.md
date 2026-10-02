@@ -63,9 +63,9 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 ## 语言检测
 
-页面侧只有一个语言闸：`utils/common.ts` 的 `shouldSkipTranslation`（业务代码经 `translateApi.ts` 的 `shouldSkipByLanguage` 调用）。没有文字、已是目标语言、或不在原文语言列表内的文本跳过；判断不出语言时放行。`trans.ts` 在插入 spinner 前对 `textContent` 判断一次，随后以 `skipLanguageCheck` 调 `translateText`，不对 HTML 原文重复检测。
+页面侧只有一个语言闸：`utils/common.ts` 的 `shouldSkipTranslation`（业务代码经 `translateApi.ts` 的 `shouldSkipByLanguage` 调用）。没有文字、已是目标语言、或**确定**不在原文语言列表内的文本跳过；判断不出语言时放行。`trans.ts` 在插入 spinner 前对 `textContent` 判断一次，随后以 `skipLanguageCheck` 调 `translateText`，不对 HTML 原文重复检测。
 
-`detectTextLanguage(text, pageLanguage)` 的顺序：先看文字种类（假名→日语，韩文→韩语，纯汉字→日语页面按日语、其余按中文，中日韩文字按 3 倍权重压过夹杂的拉丁字母）；拉丁/西里尔字母满 60 字符才用 franc，否则跟随页面语言（非拉丁语页面里的短拉丁文本按英语）。`getPageLanguage` 取 `main, article` 或 body 的前 2000 字符判断，不足 200 字符时用 `html lang` / meta 声明，按地址缓存。
+`detectTextLanguage(text, pageLanguage)` 返回 `{ language, certain }`，顺序：先看文字种类（假名→日语，韩文→韩语，纯汉字→日语页面按日语、其余按中文，中日韩文字按 3 倍权重压过夹杂的拉丁字母，持平算中日韩），这些结果确定；拉丁/西里尔字母满 60 字符才用 franc（结果确定），否则跟随页面语言（非拉丁语页面里的短拉丁文本按英语，短西里尔文本默认俄语），这类结果**不确定**；阿拉伯、泰、希腊、天城文等其他文字占多数时不论长短都用 franc，认不出就当未知，绝不取页面语言。不确定的结果只用来判断「已是目标语言」，不用来把文本排除出原文语言列表。`getPageLanguage` 取 `main, article` 或 body 的前 2000 字符判断，不足 200 字符时用 `html lang` / meta 声明，按地址缓存。
 
 Chrome 本地服务不在页面侧按原文语言列表过滤，由后台 `resolveSource` 用 `LanguageDetector` 逐段判断：置信度低于 0.5 或检测不出时，只勾选一种原文语言就按它翻译，否则保持原样；检测结果不在列表内也保持原样。谷歌、微软一律让服务自动检测。
 

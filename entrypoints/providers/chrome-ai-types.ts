@@ -27,6 +27,7 @@ export interface NativeDetector {
     destroy(): void;
 }
 export interface PromptLanguages {
+    samplingMode: 'most-predictable';
     expectedInputs: { type: 'text'; languages: string[] }[];
     expectedOutputs: { type: 'text'; languages: string[] }[];
 }

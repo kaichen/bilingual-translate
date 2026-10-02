@@ -103,7 +103,8 @@ describe('Chrome 原生 AI', () => {
         const creation = vi.mocked(apis.LanguageModel!.create).mock.calls[0][0];
         expect(creation.expectedInputs).toEqual([{ type: 'text', languages: ['en', 'ja'] }]);
         expect(creation.expectedOutputs).toEqual([{ type: 'text', languages: ['zh'] }]);
-        expect(apis.LanguageModel!.availability).toHaveBeenCalledWith({ expectedInputs: creation.expectedInputs, expectedOutputs: creation.expectedOutputs });
+        expect(apis.LanguageModel!.availability).toHaveBeenCalledWith({ samplingMode: 'most-predictable', expectedInputs: creation.expectedInputs, expectedOutputs: creation.expectedOutputs });
+        expect(creation.samplingMode).toBe('most-predictable');
         expect(creation.initialPrompts[0].content).toContain('Simplified Chinese');
         expect(apis.LanguageModel!.create).toHaveBeenCalledTimes(1);
         expect(base.prompt).not.toHaveBeenCalled();

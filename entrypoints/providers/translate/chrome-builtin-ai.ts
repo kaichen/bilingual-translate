@@ -14,6 +14,8 @@ export function chromeLanguage(language: string): string {
 
 function promptLanguages(from: string, to: string): PromptLanguages {
     return {
+        // Gemma 4 的推测解码要求确定性采样；不传时 availability 直接返回 unavailable。
+        samplingMode: 'most-predictable',
         expectedInputs: [{ type: 'text', languages: [...new Set(['en', chromeLanguage(from)])] }],
         expectedOutputs: [{ type: 'text', languages: [chromeLanguage(to)] }],
     };

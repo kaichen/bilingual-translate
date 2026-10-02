@@ -11,6 +11,7 @@ import { shouldSkipTranslation } from '../utils/common';
 import { storage } from '@wxt-dev/storage';
 import { TranslationCancelledError } from './errors';
 import { servicesType } from '../providers/registry';
+import { sendSuccessMessage } from '../ui/tip';
 import type { ChromeTranslationResponse, TranslateRequest } from '../utils/messages';
 
 // 调试相关
@@ -19,6 +20,16 @@ const isDev = process.env.NODE_ENV === 'development';
 // 把并发上限的实时读取注入翻译队列（队列本身不 import config，保持可单测）
 configureQueue(() => servicesType.isNativeAI(config.service) ? 1 : config.maxConcurrentTranslations);
 const activeChromeRequests = new Set<string>();
+
+// 后台空闲被回收后，本地大模型要重新加载；等待较久时提示一次，避免用户以为卡死。
+const SLOW_MODEL_HINT_DELAY = 3000;
+const SLOW_MODEL_HINT_INTERVAL = 30_000;
+let lastSlowModelHint = 0;
+function showSlowModelHint() {
+  if (Date.now() - lastSlowModelHint < SLOW_MODEL_HINT_INTERVAL) return;
+  lastSlowModelHint = Date.now();
+  sendSuccessMessage('本地大模型处理中，首次加载较慢，请稍候…');
+}
 if (typeof window !== 'undefined') window.addEventListener('pagehide', cancelAllTranslations);
 
 /**
@@ -73,6 +84,7 @@ export async function translateText(origin: string, context: string = document.t
         if (nativeSettings) {
           const requestId = crypto.randomUUID();
           activeChromeRequests.add(requestId);
+          const slowHint = nativeSettings.engine === 'prompt' ? setTimeout(showSlowModelHint, SLOW_MODEL_HINT_DELAY) : undefined;
           try {
             const response = await browser.runtime.sendMessage({ context, origin, requestId, timeout, chromeAI: nativeSettings } satisfies TranslateRequest) as ChromeTranslationResponse;
             if (!response.success) {
@@ -81,6 +93,7 @@ export async function translateText(origin: string, context: string = document.t
             }
             result = response.result;
           } finally {
+            clearTimeout(slowHint);
             activeChromeRequests.delete(requestId);
           }
         } else {

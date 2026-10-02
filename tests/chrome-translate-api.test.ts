@@ -8,8 +8,10 @@ vi.mock('@/entrypoints/config/config', async () => {
 vi.mock('webextension-polyfill', () => ({ default: { runtime: { sendMessage: vi.fn() } } }));
 vi.mock('@wxt-dev/storage', () => ({ storage: { setItem: vi.fn() } }));
 vi.mock('../entrypoints/utils/common', () => ({ shouldSkipTranslation: () => false }));
+vi.mock('../entrypoints/ui/tip', () => ({ sendSuccessMessage: vi.fn() }));
 import browser from 'webextension-polyfill';
 import { config } from '../entrypoints/config/config';
+import { sendSuccessMessage } from '../entrypoints/ui/tip';
 import { cancelAllTranslations, translateText } from '../entrypoints/translate/translateApi';
 
 const send = vi.mocked(browser.runtime.sendMessage);
@@ -56,6 +58,33 @@ describe('Chrome 翻译管线', () => {
         await firstRejected;
         await pendingRejected;
         expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    it('大模型请求等待超过 3 秒提示一次；及时返回或原生翻译引擎不提示', async () => {
+        vi.useFakeTimers();
+        try {
+            let complete!: (response: unknown) => void;
+            send.mockImplementation(() => new Promise(resolve => { complete = resolve; }));
+            config.chromeTranslationEngine = 'translator';
+            const native = translateText('Hello', '', { useCache: false });
+            await vi.advanceTimersByTimeAsync(5000);
+            complete({ success: true, result: '你好' });
+            await native;
+            config.chromeTranslationEngine = 'prompt';
+            const fast = translateText('Hello', '', { useCache: false });
+            await vi.advanceTimersByTimeAsync(1000);
+            complete({ success: true, result: '你好' });
+            await fast;
+            await vi.advanceTimersByTimeAsync(5000);
+            expect(sendSuccessMessage).not.toHaveBeenCalled();
+            const slow = translateText('Hello', '', { useCache: false });
+            await vi.advanceTimersByTimeAsync(3000);
+            expect(sendSuccessMessage).toHaveBeenCalledTimes(1);
+            complete({ success: true, result: '你好' });
+            await slow;
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('在切换引擎后完成的结果不写入新引擎缓存', async () => {

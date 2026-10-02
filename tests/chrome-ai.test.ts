@@ -124,6 +124,17 @@ describe('Chrome 原生 AI', () => {
         expect(apis.Translator!.create).toHaveBeenCalledTimes(1);
     });
 
+    it('只勾选一种原文语言时不需要检测器；未勾选时没有检测器则不可用', async () => {
+        apis.LanguageDetector = undefined;
+        const single = { ...translatorSettings, sources: ['ja'] };
+        expect((await service.status(single)).availability).toBe('available');
+        await service.initialize(single);
+        await expect(service.translate('こんにちは', single, signal())).resolves.toBe('你好');
+        expect(apis.Translator!.create).toHaveBeenCalledWith(expect.objectContaining({ sourceLanguage: 'ja', targetLanguage: 'zh' }));
+        expect(await service.status(translatorSettings)).toMatchObject({ availability: 'unavailable', message: expect.stringContaining('语言检测不可用') });
+        expect((await service.status({ ...translatorSettings, sources: ['en', 'ja'] })).availability).toBe('unavailable');
+    });
+
     it('汉字混合日语使用检测结果；不把检测失败的文本当成英语', async () => {
         detected = 'ja';
         await service.translate('今日は日本語です', translatorSettings, signal());

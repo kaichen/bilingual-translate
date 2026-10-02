@@ -78,9 +78,11 @@ export default function ChromeAISettings({ settings, onEngine, onSource }: {
             {status?.availability === 'downloading' && status.progress !== undefined && <progress max={100} value={status.progress} aria-label="模型下载进度" />}
             {status?.availability === 'downloading' && status.progress !== undefined && <span>{status.progress}%</span>}
         </div>
-        <button className="bt-button bt-full-width" type="button" disabled={!status || status.availability === 'unavailable' || initializing || status.availability === 'downloading'} onClick={initialize}>
-            {initializing || status?.availability === 'downloading' ? '正在准备模型…' : status?.availability === 'downloadable' ? '下载并初始化模型' : '初始化模型'}
-        </button>
+        {(initializing || status?.availability === 'downloading') && <button className="bt-button bt-full-width" type="button" disabled>正在准备模型…</button>}
+        {!initializing && status?.availability === 'downloadable' && <>
+            <button className="bt-button bt-full-width" type="button" onClick={initialize}>下载模型</button>
+            <p className="bt-native-ai-note">模型体积较大，仅需下载一次。</p>
+        </>}
         {settings.from === 'auto' && <p className="bt-native-ai-note">自动检测先准备英语到目标语言。其他语言需下载时，请选择对应源语言并初始化。</p>}
         {settings.engine === 'prompt' && <details className="bt-native-ai-setup">
             <summary>Gemma 4 首次设置</summary>

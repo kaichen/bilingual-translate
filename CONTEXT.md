@@ -59,7 +59,7 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 ## 原文语言（sourceLanguages）
 
-全局配置 `sourceLanguages: string[]` 表示「只翻译这些语言」，空数组即自动检测、全部翻译。旧配置的单值 `from` 在 `Config` 构造时迁移。
+全局配置 `sourceLanguages: string[]` 表示「只翻译这些语言」，空数组即自动检测、全部翻译。旧配置的单值 `from` 在 `Config` 构造时迁移。所有服务的翻译缓存 key（`translate/cache-key.ts` 的 `buildKey`）都含排序后的原文语言列表（空列表为 `auto`），改了列表不会读到按旧列表缓存的译文。
 
 ## 语言检测
 
@@ -79,4 +79,4 @@ Gemma 4 模型由 Chrome 的实验配置和组件分发管理，扩展不传模�
 
 大模型会话必须带 `samplingMode: 'most-predictable'`，否则 Chrome 154 的 Gemma 4 直接返回 unavailable。页面一次放行最多 8 个大模型请求，后台把排队中同配置的短段落用 `[[n]]` 标记合并成一次推理（`translateBatchWithPrompt`）；标记缺失或重复时逐段重译。短文本按每字符 2 个 token 粗估，不调用 `measureContextUsage`。
 
-原生翻译请求携带配置快照、requestId 和推理超时；后台通过 AbortSignal 处理超时，`cancelChromeTranslation` 按发送页面隔离取消。确定性的模型/语言状态不会走网络重试。缓存包含引擎、源语言和 Prompt 模板版本，防止读到旧原生译文。
+原生翻译请求携带配置快照、requestId 和推理超时；后台通过 AbortSignal 处理超时，`cancelChromeTranslation` 按发送页面隔离取消。确定性的模型/语言状态不会走网络重试。缓存包含引擎、原文语言列表和 Prompt 模板版本，防止读到旧原生译文。

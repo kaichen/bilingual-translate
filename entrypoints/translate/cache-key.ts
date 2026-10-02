@@ -14,12 +14,14 @@ export interface CacheKeyParams {
     sourceLanguages?: string[];
 }
 
-// 构建翻译缓存 key：前缀_样式_服务_模型_目标语言_消息（纯函数，不读 config 单例 → 可单测）
+// 构建翻译缓存 key：前缀_样式_服务_模型_原文语言_目标语言_消息（纯函数，不读 config 单例 → 可单测）
+// 原文语言排序后逗号连接、空列表为 auto：缩小原文语言列表后，被排除语言的旧译文不会再从缓存返回。
 export function buildKey(message: string, c: CacheKeyParams): string {
+    const sources = [...new Set(c.sourceLanguages ?? [])].sort().join(',') || 'auto';
     if (servicesType.isNativeAI(c.service)) {
         const engine = chromeEngineOf(c.service);
-        return [CACHE_PREFIX, c.style, c.service, engine === 'prompt' ? CHROME_PROMPT_VERSION : engine, c.sourceLanguages?.length === 1 ? c.sourceLanguages[0] : 'auto', c.to, message].join('_');
+        return [CACHE_PREFIX, c.style, c.service, engine === 'prompt' ? CHROME_PROMPT_VERSION : engine, sources, c.to, message].join('_');
     }
     const selectedModel = c.model[c.service] === customModelString ? c.customModel[c.service] : c.model[c.service];
-    return [CACHE_PREFIX, c.style, c.service, selectedModel, c.to, message].join('_');
+    return [CACHE_PREFIX, c.style, c.service, selectedModel, sources, c.to, message].join('_');
 }

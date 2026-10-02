@@ -18,11 +18,11 @@ import {
     SOURCE_KEY_ATTR,
     type TranslationTarget
 } from "@/entrypoints/main/dom";
-import { shouldSkipTranslation, throttle } from "@/entrypoints/utils/common";
+import { throttle } from "@/entrypoints/utils/common";
 import { getMainDomain, getSiteRule } from "@/entrypoints/main/site-rules";
 import { config } from "@/entrypoints/config/config";
 import { TranslationCancelledError } from '@/entrypoints/translate/errors';
-import { translateText, cancelAllTranslations } from '@/entrypoints/translate/translateApi';
+import { translateText, cancelAllTranslations, shouldSkipByLanguage } from '@/entrypoints/translate/translateApi';
 
 let hoverTimer: any; // 鼠标悬停计时器
 let htmlSet = new Set(); // 防抖
@@ -665,13 +665,13 @@ export function handleSingleTranslation(node: any, slide: boolean) {
 
 
 function bilingualTranslate(node: any, nodeOuterHTML: any) {
-    if (shouldSkipTranslation(node.textContent, config.to, config.sourceLanguages)) return;
+    if (shouldSkipByLanguage(node.textContent)) return;
 
     let origin = node.textContent;
     let spinner = insertLoadingSpinner(node);
     
     // 使用队列管理的翻译API
-    translateText(origin, document.title)
+    translateText(origin, document.title, { skipLanguageCheck: true })
         .then((text: string) => {
             spinner.remove();
             htmlSet.delete(nodeOuterHTML);
@@ -686,7 +686,7 @@ function bilingualTranslate(node: any, nodeOuterHTML: any) {
 
 function handleBilingualTargetTranslation(target: TranslationTarget) {
     const origin = getTranslationTargetSourceText(target);
-    if (shouldSkipTranslation(origin, config.to, config.sourceLanguages)) return;
+    if (shouldSkipByLanguage(origin)) return;
 
     const cached = cache.localGet(origin);
     if (cached) {
@@ -694,7 +694,7 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
         return;
     }
 
-    translateText(origin, document.title)
+    translateText(origin, document.title, { skipLanguageCheck: true })
         .then((text: string) => {
             appendBilingualTranslationForTarget(target, text);
         })
@@ -705,14 +705,14 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
 
 
 export function singleTranslate(node: any) {
-    if (shouldSkipTranslation(node.textContent, config.to, config.sourceLanguages)) return;
+    if (shouldSkipByLanguage(node.textContent)) return;
 
     let origin = servicesType.isAI(config.service) || (servicesType.isNativeAI(config.service) && chromeEngineOf(config.service) === 'prompt')
         ? LLMStandardHTML(node) : node.innerHTML;
     let spinner = insertLoadingSpinner(node);
     
     // 使用队列管理的翻译API
-    translateText(origin, document.title)
+    translateText(origin, document.title, { skipLanguageCheck: true })
         .then((text: string) => {
             spinner.remove();
             

@@ -35,6 +35,11 @@ function showSlowModelHint() {
 }
 if (typeof window !== 'undefined') window.addEventListener('pagehide', cancelAllTranslations);
 
+// 页面侧的语言闸。Chrome 本地服务的原文语言过滤交给后台更准的检测器，这里只判断目标语言。
+export function shouldSkipByLanguage(text: string): boolean {
+  return shouldSkipTranslation(text, config.to, servicesType.isNativeAI(config.service) ? [] : config.sourceLanguages);
+}
+
 /**
  * 翻译API的统一入口
  * 所有翻译请求都应该通过此函数发送，以便集中管理队列和重试逻辑
@@ -50,10 +55,11 @@ export async function translateText(origin: string, context: string = document.t
     retryDelay = 1000, 
     timeout = 45000,
     useCache = config.useCache,
+    skipLanguageCheck = false,
   } = options;
 
   // 如果目标语言与当前文本语言相同，直接返回原文
-  if (shouldSkipTranslation(origin, config.to, config.sourceLanguages)) {
+  if (!skipLanguageCheck && shouldSkipByLanguage(origin)) {
     return origin;
   }
 
@@ -170,4 +176,6 @@ export interface TranslateOptions {
   timeout?: number;
   /** 是否使用缓存 */
   useCache?: boolean;
+  /** 调用方已用 shouldSkipByLanguage 判断过原文（传入的可能是 HTML），不再重复检测 */
+  skipLanguageCheck?: boolean;
 } 

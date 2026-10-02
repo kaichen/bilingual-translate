@@ -36,22 +36,60 @@ export function detectlang(origin: string): string {
     }
 }
 
-// 短文本的语言检测不可靠，低于这个长度不按原文语言列表过滤。
-const SOURCE_FILTER_MIN_LENGTH = 20;
-
+// 拉丁字母等靠统计才能区分的文字，至少这么长才用 franc，否则按页面语言。
+const STATISTICAL_MIN_LENGTH = 60;
 // 正文样本至少这么长才用它判断页面语言，否则退回页面声明的语言。
 const PAGE_SAMPLE_MIN_LENGTH = 200;
 const PAGE_SAMPLE_MAX_LENGTH = 2000;
+// 不使用拉丁字母 / 使用西里尔字母的页面语言（两字码来自声明，三字码来自 franc）。
+const NON_LATIN_LANGUAGE = /^(ja|zh|ko|ru|uk|bg|sr|be|ar|he|fa|th|hi|el|jpn|cmn|kor|rus|ukr|bul|srp|bel|arb|heb|pes|tha|hin|ell)\b/;
+const CYRILLIC_LANGUAGE = /^(ru|uk|bg|sr|be|rus|ukr|bul|srp|bel)\b/;
 
-// 页面语言：优先用正文样本检测（声明常常不准），样本太短或检测不出时用 html lang / meta 声明。纯函数，可单测。
-export function resolvePageLanguage(sample: string, declared: string): string | undefined {
-    if (sample.length >= PAGE_SAMPLE_MIN_LENGTH) {
-        const detected = detectlang(sample);
-        if (detected !== 'und') return detected;
+const count = (text: string, pattern: RegExp): number => text.match(pattern)?.length ?? 0;
+
+// 判断一段文字的语言：先看文字种类（假名、韩文等一眼可辨），拿不准的再看长度决定用 franc 还是页面语言。
+// 没有任何文字（数字、符号、空白）或无从判断时返回 undefined。纯函数，可单测。
+export function detectTextLanguage(text: string, pageLanguage?: string): string | undefined {
+    const kana = count(text, /[\p{Script=Hiragana}\p{Script=Katakana}]/gu);
+    const han = count(text, /\p{Script=Han}/gu);
+    const hangul = count(text, /\p{Script=Hangul}/gu);
+    const cyrillic = count(text, /\p{Script=Cyrillic}/gu);
+    const latin = count(text, /\p{Script=Latin}/gu);
+    const letters = count(text, /\p{L}/gu);
+    if (!letters) return undefined;
+
+    // 日文、中文、韩文里常夹着拉丁字母的品牌名和术语，一个字的信息量也更大，按 3 倍计。
+    const cjk = (kana + han) * 3;
+    const top = Math.max(cjk, hangul * 3, cyrillic, latin);
+    const long = text.trim().length >= STATISTICAL_MIN_LENGTH;
+    const statistical = () => {
+        const detected = long ? detectlang(text.trim()) : 'und';
+        return detected === 'und' ? undefined : detected;
+    };
+
+    if (top && top === cjk) {
+        // 有假名一定是日语；纯汉字在日语页面里按日语，其余按中文。
+        if (kana) return 'ja';
+        return pageLanguage && /^(ja|jpn)\b/.test(pageLanguage) ? 'ja' : 'zh-Hans';
     }
+    if (top && top === hangul * 3) return 'ko';
+    if (top && top === cyrillic) {
+        return statistical() ?? (pageLanguage && CYRILLIC_LANGUAGE.test(pageLanguage) ? pageLanguage : 'ru');
+    }
+    if (top && top === latin) {
+        // 短的拉丁字母文本统计检测不可靠：跟随页面语言；非拉丁语页面里的短句按英语。
+        const fallback = !pageLanguage ? undefined : NON_LATIN_LANGUAGE.test(pageLanguage) ? 'en' : pageLanguage;
+        return statistical() ?? fallback;
+    }
+    return statistical() ?? pageLanguage;
+}
+
+// 页面语言：正文样本够长时按样本判断（页面声明常常不准），否则用 html lang / meta 声明。纯函数，可单测。
+export function resolvePageLanguage(sample: string, declared: string): string | undefined {
     const primary = declared.trim().toLowerCase().split(/[-_]/)[0];
-    if (!primary) return undefined;
-    return primary === 'zh' ? 'zh-Hans' : primary;
+    const declaredLanguage = !primary ? undefined : primary === 'zh' ? 'zh-Hans' : primary;
+    if (sample.length < PAGE_SAMPLE_MIN_LENGTH) return declaredLanguage;
+    return detectTextLanguage(sample, declaredLanguage) ?? declaredLanguage;
 }
 
 let pageLanguageCache: { url: string; language?: string } | undefined;
@@ -71,20 +109,15 @@ export function getPageLanguage(): string | undefined {
     return language;
 }
 
-// 文本是否属于「需要翻译的原文语言」。列表为空表示全部翻译。
-// 短文本或检测不出语言时按页面语言判断；页面语言也未知时放行。
-export function isSourceLanguageAllowed(text: string, sourceLanguages: string[], pageLanguage: () => string | undefined = getPageLanguage): boolean {
-    if (!sourceLanguages.length) return true;
-    const trimmed = text.trim();
-    const detected = trimmed.length >= SOURCE_FILTER_MIN_LENGTH ? detectlang(trimmed) : 'und';
-    const language = detected === 'und' ? pageLanguage() : detected;
-    return !language || sourceLanguages.includes(language);
-}
-
-// 空白文本、已是目标语言（去空白后用 detectlang 判定）、或不在原文语言列表内，都跳过翻译。
-export function shouldSkipTranslation(text: string, targetLang: string, sourceLanguages: string[] = []): boolean {
-    const compact = (text ?? '').replace(/[\s　]/g, '');
-    return !compact || detectlang(compact) === targetLang || !isSourceLanguageAllowed(text, sourceLanguages);
+// 翻译前的唯一语言闸：没有文字、已是目标语言、或不在「需要翻译的原文语言」列表内，都跳过。
+// 列表为空表示全部翻译；判断不出语言时放行。
+export function shouldSkipTranslation(
+    text: string, targetLang: string, sourceLanguages: string[] = [], pageLanguage: () => string | undefined = getPageLanguage,
+): boolean {
+    if (!text || !/\p{L}/u.test(text)) return true;
+    const language = detectTextLanguage(text, pageLanguage());
+    if (!language) return false;
+    return language === targetLang || (sourceLanguages.length > 0 && !sourceLanguages.includes(language));
 }
 
 // 获取触摸点的中心位置

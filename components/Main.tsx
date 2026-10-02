@@ -446,6 +446,9 @@ export default function Main() {
     };
   }, [config]);
 
+  const labelOfTo = (value: string) => options.to.find((item) => item.value === value)?.label ?? value;
+  const languageSummary = `语言：${config.sourceLanguages.length ? config.sourceLanguages.map(labelOfTo).join('、') : '自动检测'} → ${labelOfTo(config.to)}`;
+
   return (
     <div className="bt-main-panel">
       {toast && <div className={`bt-toast ${toast.type}`}>{toast.message}</div>}
@@ -493,39 +496,71 @@ export default function Main() {
             </SettingRow>
           )}
 
-          <SettingRow label="翻译服务" hint="机器翻译：快速稳定；云端 AI 需要令牌；带「离线」的 Chrome 服务在本机运行，与在线的谷歌翻译无关">
-            <SelectControl value={config.service} options={computed.filteredServices} onChange={(value) => setField('service', value)} />
-          </SettingRow>
+          <div className="bt-service-block">
+            <SettingRow label="翻译服务" hint="机器翻译：快速稳定；云端 AI 需要令牌；带「离线」的 Chrome 服务在本机运行，与在线的谷歌翻译无关">
+              <SelectControl value={config.service} options={computed.filteredServices} onChange={(value) => setField('service', value)} />
+            </SettingRow>
 
-          <SettingRow label="目标语言">
-            <SelectControl value={config.to} options={options.to} onChange={(value) => updateConfig((draft) => {
-              draft.to = value;
-              // 目标语言不能同时是要翻译的原文语言
-              draft.sourceLanguages = draft.sourceLanguages.filter((language) => language !== value);
-            })} />
-          </SettingRow>
+            {computed.showNativeAI && <ChromeAISettings
+              key={`${config.service}:${config.sourceLanguages.join()}:${config.to}`}
+              settings={{ engine: chromeEngineOf(config.service), sources: config.sourceLanguages, to: config.to }}
+            />}
 
-          <SettingRow label="原文语言" hint="只翻译勾选的语言，可多选；都不勾选则自动检测并翻译所有语言">
-            <div className="bt-language-checks">
-              {options.to.filter((item) => item.value !== config.to).map((item) => (
-                <label key={item.value} className="bt-language-check">
-                  <input
-                    type="checkbox"
-                    checked={config.sourceLanguages.includes(item.value)}
-                    onChange={(event) => setField('sourceLanguages', event.currentTarget.checked
-                      ? [...config.sourceLanguages, item.value]
-                      : config.sourceLanguages.filter((language) => language !== item.value))}
-                  />
-                  {item.label}
-                </label>
-              ))}
-            </div>
-          </SettingRow>
+            {computed.showToken && (
+              <SettingRow label="访问令牌" hint="API访问令牌仅保存在本地，用于访问翻译服务">
+                <TextInput value={config.token[config.service] || ''} type="password" placeholder="请输入API访问令牌" onChange={(value) => setMapField('token', config.service, value)} />
+              </SettingRow>
+            )}
 
-          {computed.showNativeAI && <ChromeAISettings
-            key={`${config.service}:${config.sourceLanguages.join()}:${config.to}`}
-            settings={{ engine: chromeEngineOf(config.service), sources: config.sourceLanguages, to: config.to }}
-          />}
+            {computed.showCustom && (
+              <SettingRow label="自定义接口" hint="目前仅支持OpenAI格式的请求接口">
+                <TextInput value={config.custom} placeholder="请输入自定义接口地址" onChange={(value) => setField('custom', value)} />
+              </SettingRow>
+            )}
+
+            {computed.showModel && (
+              <SettingRow label="模型">
+                <SelectControl
+                  value={config.model[config.service] || ''}
+                  options={computed.model.map((modelName) => ({ value: modelName, label: modelName }))}
+                  placeholder="请选择模型"
+                  onChange={(value) => setMapField('model', config.service, value)}
+                />
+              </SettingRow>
+            )}
+
+            {computed.showCustomModel && (
+              <SettingRow label="自定义模型" hint="自定义模型名称需要与服务商提供的模型名称一致">
+                <TextInput value={config.customModel[config.service] || ''} placeholder="例如：gemma:7b" onChange={(value) => setMapField('customModel', config.service, value)} />
+              </SettingRow>
+            )}
+
+            {(computed.showProxy || computed.showAI) && (
+              <details className="bt-advanced-panel bt-fold">
+                <summary><span className="bt-summary-text">服务高级设置</span></summary>
+
+                {computed.showProxy && (
+                  <SettingRow label="代理地址" hint="使用代理可以解决网络无法访问的问题，如不熟悉代理设置请留空">
+                    <TextInput value={config.proxy[config.service] || ''} placeholder="默认不使用代理" onChange={(value) => setMapField('proxy', config.service, value)} />
+                  </SettingRow>
+                )}
+
+                {computed.showAI && (
+                  <>
+                    <SettingRow label="system" hint="以系统身份 system 发送的对话，常用于指定 AI 要扮演的角色" wide>
+                      <TextArea value={config.system_role[config.service] || ''} placeholder="system message" onChange={(value) => setMapField('system_role', config.service, value)} />
+                    </SettingRow>
+                    <SettingRow label="user" hint="以用户身份 user 发送的对话，其中 {{to}} 和 {{origin}} 不可缺少" wide>
+                      <TextArea value={config.user_role[config.service] || ''} placeholder="user message template" onChange={(value) => setMapField('user_role', config.service, value)} />
+                    </SettingRow>
+                    <div className="bt-row-actions">
+                      <button className="bt-button text" type="button" onClick={resetTemplate}>恢复默认模板</button>
+                    </div>
+                  </>
+                )}
+              </details>
+            )}
+          </div>
 
           <SettingRow label="鼠标悬浮快捷键" hint="按住指定快捷键并悬停在文本上进行翻译">
             <div className="bt-hotkey-config">
@@ -541,49 +576,37 @@ export default function Main() {
             </div>
           </SettingRow>
 
-          {computed.showToken && (
-            <SettingRow label="访问令牌" hint="API访问令牌仅保存在本地，用于访问翻译服务">
-              <TextInput value={config.token[config.service] || ''} type="password" placeholder="请输入API访问令牌" onChange={(value) => setMapField('token', config.service, value)} />
-            </SettingRow>
-          )}
+          <details className="bt-advanced-panel bt-fold">
+            <summary><span className="bt-summary-text" title={languageSummary}>{languageSummary}</span></summary>
 
-          {computed.showCustom && (
-            <SettingRow label="自定义接口" hint="目前仅支持OpenAI格式的请求接口">
-              <TextInput value={config.custom} placeholder="请输入自定义接口地址" onChange={(value) => setField('custom', value)} />
-            </SettingRow>
-          )}
-
-          {computed.showModel && (
-            <SettingRow label="模型">
-              <SelectControl
-                value={config.model[config.service] || ''}
-                options={computed.model.map((modelName) => ({ value: modelName, label: modelName }))}
-                placeholder="请选择模型"
-                onChange={(value) => setMapField('model', config.service, value)}
-              />
-            </SettingRow>
-          )}
-
-          {computed.showCustomModel && (
-            <SettingRow label="自定义模型" hint="自定义模型名称需要与服务商提供的模型名称一致">
-              <TextInput value={config.customModel[config.service] || ''} placeholder="例如：gemma:7b" onChange={(value) => setMapField('customModel', config.service, value)} />
-            </SettingRow>
-          )}
-
-          <details className="bt-advanced-panel">
-            <summary>更多选项</summary>
-
-            <SettingRow label="主题设置">
-              <SelectControl value={config.theme} options={options.theme} onChange={(value) => setField('theme', value)} />
+            <SettingRow label="原文语言" hint="只翻译勾选的语言，可多选；都不勾选则自动检测并翻译所有语言">
+              <div className="bt-language-checks">
+                {options.to.filter((item) => item.value !== config.to).map((item) => (
+                  <label key={item.value} className="bt-language-check">
+                    <input
+                      type="checkbox"
+                      checked={config.sourceLanguages.includes(item.value)}
+                      onChange={(event) => setField('sourceLanguages', event.currentTarget.checked
+                        ? [...config.sourceLanguages, item.value]
+                        : config.sourceLanguages.filter((language) => language !== item.value))}
+                    />
+                    {item.label}
+                  </label>
+                ))}
+              </div>
             </SettingRow>
 
-            <SettingRow label="缓存翻译结果" hint="开启缓存可以提高翻译速度，减少重复请求">
-              <SwitchControl checked={config.useCache} onChange={(value) => setField('useCache', value)} />
+            <SettingRow label="目标语言">
+              <SelectControl value={config.to} options={options.to} onChange={(value) => updateConfig((draft) => {
+                draft.to = value;
+                // 目标语言不能同时是要翻译的原文语言
+                draft.sourceLanguages = draft.sourceLanguages.filter((language) => language !== value);
+              })} />
             </SettingRow>
+          </details>
 
-            <SettingRow label="动画效果" hint="禁用后将关闭加载/悬浮等动画">
-              <SwitchControl checked={config.animations} onChange={(value) => setField('animations', value)} />
-            </SettingRow>
+          <details className="bt-advanced-panel bt-fold">
+            <summary><span className="bt-summary-text">更多功能</span></summary>
 
             <SettingRow label="视频字幕翻译" hint="在 YouTube 或 Substack 播放器打开字幕时，于视频上叠加双语字幕">
               <SwitchControl checked={config.youtubeSubtitle} onChange={(value) => setField('youtubeSubtitle', value)} />
@@ -610,37 +633,35 @@ export default function Main() {
                 <SelectControl value={config.inputBoxTranslationTarget} options={options.inputBoxTranslationTarget} onChange={(value) => setField('inputBoxTranslationTarget', value)} />
               </SettingRow>
             )}
+          </details>
 
-            <SettingRow label="翻译并发数" hint="控制同时进行的最大翻译任务数">
-              <input
-                className="bt-input"
-                type="number"
-                min={1}
-                max={100}
-                step={1}
-                value={config.maxConcurrentTranslations}
-                onChange={(event) => handleConcurrentChange(event.currentTarget.value)}
-              />
+          <details className="bt-advanced-panel bt-fold">
+            <summary><span className="bt-summary-text">通用</span></summary>
+
+            <SettingRow label="主题设置">
+              <SelectControl value={config.theme} options={options.theme} onChange={(value) => setField('theme', value)} />
             </SettingRow>
 
-            {computed.showProxy && (
-              <SettingRow label="代理地址" hint="使用代理可以解决网络无法访问的问题，如不熟悉代理设置请留空">
-                <TextInput value={config.proxy[config.service] || ''} placeholder="默认不使用代理" onChange={(value) => setMapField('proxy', config.service, value)} />
-              </SettingRow>
-            )}
+            <SettingRow label="动画效果" hint="禁用后将关闭加载/悬浮等动画">
+              <SwitchControl checked={config.animations} onChange={(value) => setField('animations', value)} />
+            </SettingRow>
 
-            {computed.showAI && (
-              <>
-                <SettingRow label="system" hint="以系统身份 system 发送的对话，常用于指定 AI 要扮演的角色" wide>
-                  <TextArea value={config.system_role[config.service] || ''} placeholder="system message" onChange={(value) => setMapField('system_role', config.service, value)} />
-                </SettingRow>
-                <SettingRow label="user" hint="以用户身份 user 发送的对话，其中 {{to}} 和 {{origin}} 不可缺少" wide>
-                  <TextArea value={config.user_role[config.service] || ''} placeholder="user message template" onChange={(value) => setMapField('user_role', config.service, value)} />
-                </SettingRow>
-                <div className="bt-row-actions">
-                  <button className="bt-button text" type="button" onClick={resetTemplate}>恢复默认模板</button>
-                </div>
-              </>
+            <SettingRow label="缓存翻译结果" hint="开启缓存可以提高翻译速度，减少重复请求">
+              <SwitchControl checked={config.useCache} onChange={(value) => setField('useCache', value)} />
+            </SettingRow>
+
+            {!computed.showNativeAI && (
+              <SettingRow label="翻译并发数" hint="控制同时进行的最大翻译任务数">
+                <input
+                  className="bt-input"
+                  type="number"
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={config.maxConcurrentTranslations}
+                  onChange={(event) => handleConcurrentChange(event.currentTarget.value)}
+                />
+              </SettingRow>
             )}
 
             <div className="bt-divider">配置管理</div>

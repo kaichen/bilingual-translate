@@ -330,6 +330,39 @@
   transform: rotate(90deg);
 }
 
+.bt-fold {
+  margin: 0;
+  padding: 8px 0 0;
+}
+
+.bt-fold > summary {
+  padding: 2px 0 10px;
+}
+
+.bt-fold > summary::before {
+  flex: none;
+}
+
+.bt-summary-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 翻译服务区块：上下细线轻量分组，内含该服务自己的设置 */
+.bt-service-block {
+  margin: 2px 0 12px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--bt-border-color);
+  border-bottom: 1px solid var(--bt-border-color);
+}
+
+.bt-service-block > .bt-fold {
+  border-top: 0;
+  padding-top: 0;
+}
+
 .bt-row-actions {
   display: flex;
   justify-content: flex-end;

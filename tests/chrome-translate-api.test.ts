@@ -44,6 +44,8 @@ describe('Chrome 翻译管线', () => {
     });
 
     it('取消发送当前活跃请求编号，同时拒绝未发送的排队请求', async () => {
+        // 原生翻译逐段串行，第二个请求留在页面队列里
+        config.chromeTranslationEngine = 'translator';
         let complete!: (response: unknown) => void;
         send.mockImplementation(message => (message as { type?: string }).type === 'cancelChromeTranslation'
             ? Promise.resolve({ success: true }) : new Promise(resolve => { complete = resolve; }));

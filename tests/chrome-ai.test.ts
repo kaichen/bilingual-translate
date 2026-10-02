@@ -112,6 +112,36 @@ describe('Chrome 原生 AI', () => {
         clones.forEach(clone => { expect(clone.prompt).toHaveBeenCalledTimes(1); expect(clone.destroy).toHaveBeenCalledTimes(1); });
     });
 
+    it('排队中的大模型请求合并为一次推理，短文本不询问用量', async () => {
+        const settings = { ...promptSettings, from: 'en' };
+        const results = await Promise.all(['One', ' Two\n', 'Three'].map(text => service.translate(text, settings, signal())));
+        expect(results).toEqual(['One', ' Two\n', 'Three']);
+        expect(clones).toHaveLength(1);
+        expect(clones[0].prompt).toHaveBeenCalledWith('[[1]]\nOne\n[[2]]\nTwo\n[[3]]\nThree', expect.anything());
+        expect(base.measureContextUsage).not.toHaveBeenCalled();
+    });
+
+    it('合并译文缺少标记时逐段重译；取消其中一段不影响其余', async () => {
+        const settings = { ...promptSettings, from: 'en' };
+        base.clone = vi.fn(async () => {
+            const session: NativeLanguageModel = {
+                ...base, destroy: vi.fn(),
+                prompt: vi.fn(async (text: string) => text.includes('[[') ? '模型丢了标记' : `译文${text}`),
+            };
+            clones.push(session);
+            return session;
+        });
+        const abort = new AbortController();
+        const first = service.translate('One', settings, signal());
+        const second = service.translate('Two', settings, abort.signal);
+        const cancelled = expect(second).rejects.toThrow('取消');
+        abort.abort(new Error('取消'));
+        const third = service.translate('Three', settings, signal());
+        expect(await Promise.all([first, third])).toEqual(['译文One', '译文Three']);
+        await cancelled;
+        expect(clones).toHaveLength(3);
+    });
+
     it('长文本分块完整覆盖，包括换行与非 BMP 字符', async () => {
         const small: NativeLanguageModel = { ...base, contextWindow: 70, contextUsage: 10 };
         const text = 'First sentence.\n第二段。日本語の文章です。🙂'.repeat(8);

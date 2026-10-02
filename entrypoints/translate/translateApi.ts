@@ -12,13 +12,16 @@ import { storage } from '@wxt-dev/storage';
 import { TranslationCancelledError } from './errors';
 import { servicesType } from '../providers/registry';
 import { sendSuccessMessage } from '../ui/tip';
+import { PROMPT_BATCH_MAX_SEGMENTS } from '../providers/llm/chrome-prompt';
 import type { ChromeTranslationResponse, TranslateRequest } from '../utils/messages';
 
 // 调试相关
 const isDev = process.env.NODE_ENV === 'development';
 
 // 把并发上限的实时读取注入翻译队列（队列本身不 import config，保持可单测）
-configureQueue(() => servicesType.isNativeAI(config.service) ? 1 : config.maxConcurrentTranslations);
+// 原生翻译逐段串行；大模型放行一批，由后台合并成一次推理。
+configureQueue(() => !servicesType.isNativeAI(config.service) ? config.maxConcurrentTranslations
+  : config.chromeTranslationEngine === 'prompt' ? PROMPT_BATCH_MAX_SEGMENTS : 1);
 const activeChromeRequests = new Set<string>();
 
 // 后台空闲被回收后，本地大模型要重新加载；等待较久时提示一次，避免用户以为卡死。

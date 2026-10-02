@@ -1,5 +1,5 @@
 import { config } from '@/entrypoints/config/config';
-import { chromeSystemPrompt, translateWithPrompt } from '../llm/chrome-prompt';
+import { chromeSystemPrompt, PROMPT_BATCH_MAX_SEGMENTS, translateBatchWithPrompt } from '../llm/chrome-prompt';
 import type {
     AIAvailability, DownloadMonitor, ChromeAIAPIs, ChromeAISettings, ChromeAIStatus, NativeDetector,
     NativeLanguageModel, NativeTranslator, PromptLanguages,
@@ -34,6 +34,7 @@ export class ChromeAIService {
     private model?: { key: string; session: NativeLanguageModel };
     private idleTimer?: ReturnType<typeof setTimeout>;
     private preparing?: { key: string; promise: Promise<void>; status: ChromeAIStatus };
+    private prompts: PromptRequest[] = [];
 
     constructor(private readonly apis: () => ChromeAIAPIs) {}
 
@@ -189,6 +190,12 @@ export class ChromeAIService {
     translate(text: string, settings: ChromeAISettings, signal: AbortSignal, timeout = 45_000): Promise<string> {
         validate(settings);
         if (typeof text !== 'string' || !text.trim()) throw new Error('翻译文本不能为空');
+        if (settings.engine === 'prompt') {
+            return new Promise((resolve, reject) => {
+                this.prompts.push({ text, settings, signal, timeout, resolve, reject });
+                void this.serial(() => this.drainPrompts());
+            });
+        }
         return this.serial(async () => {
             signal.throwIfAborted();
             const controller = new AbortController();
@@ -206,9 +213,7 @@ export class ChromeAIService {
                 controller.signal.throwIfAborted();
                 if (chromeLanguage(source) === chromeLanguage(settings.to)) return text;
                 const effective = { ...settings, from: source };
-                const result = settings.engine === 'prompt'
-                    ? await translateWithPrompt(await this.getModel(effective, controller.signal, false), text, controller.signal)
-                    : await (await this.getTranslator(effective, controller.signal, false)).translate(text, { signal: controller.signal });
+                const result = await (await this.getTranslator(effective, controller.signal, false)).translate(text, { signal: controller.signal });
                 if (!result.trim()) throw new Error('Chrome 返回空译文');
                 return result;
             } catch (error) {
@@ -222,6 +227,64 @@ export class ChromeAIService {
             }
         });
     }
+
+    // 大模型请求排队期间攒下的同配置请求合并成一批推理，减少调用次数。
+    private async drainPrompts(): Promise<void> {
+        const live = this.prompts.filter(item => {
+            if (item.signal.aborted) item.reject(item.signal.reason);
+            return !item.signal.aborted;
+        });
+        const head = live[0];
+        if (!head) { this.prompts = []; return; }
+        const key = this.key(head.settings);
+        const group = live.filter(item => this.key(item.settings) === key).slice(0, PROMPT_BATCH_MAX_SEGMENTS);
+        this.prompts = live.filter(item => !group.includes(item));
+
+        const controller = new AbortController();
+        // 单个请求取消只结束它自己；整批都取消才中止推理。
+        const abort = () => {
+            group.forEach(item => { if (item.signal.aborted) item.reject(item.signal.reason); });
+            if (group.every(item => item.signal.aborted)) controller.abort(head.signal.reason);
+        };
+        group.forEach(item => item.signal.addEventListener('abort', abort));
+        const timer = setTimeout(() => controller.abort(new Error('Chrome 翻译请求超时')), head.timeout);
+        try {
+            const bySource = new Map<string, PromptRequest[]>();
+            for (const item of group) {
+                let source = head.settings.from;
+                if (source === 'auto') {
+                    const detector = await this.getDetector(head.settings, controller.signal, false);
+                    source = (await detector.detect(item.text, { signal: controller.signal }))[0]?.detectedLanguage;
+                    if (!source || source === 'und') { item.reject(new Error('无法检测文本语言，请在设置中选择源语言')); continue; }
+                }
+                if (chromeLanguage(source) === chromeLanguage(head.settings.to)) { item.resolve(item.text); continue; }
+                bySource.set(source, [...bySource.get(source) || [], item]);
+            }
+            for (const [source, items] of bySource) {
+                controller.signal.throwIfAborted();
+                const model = await this.getModel({ ...head.settings, from: source }, controller.signal, false);
+                const results = await translateBatchWithPrompt(model, items.map(item => item.text), controller.signal);
+                items.forEach((item, index) => item.resolve(results[index]));
+            }
+        } catch (error) {
+            // 中止会话后不复用失效的原生对象。
+            this.dispose();
+            const reason = controller.signal.aborted ? controller.signal.reason : error;
+            group.forEach(item => item.reject(reason));
+        } finally {
+            clearTimeout(timer);
+            group.forEach(item => item.signal.removeEventListener('abort', abort));
+        }
+    }
+}
+
+interface PromptRequest {
+    text: string;
+    settings: ChromeAISettings;
+    signal: AbortSignal;
+    timeout: number;
+    resolve: (result: string) => void;
+    reject: (reason: unknown) => void;
 }
 
 export const chromeAI = new ChromeAIService(() => globalThis as ChromeAIAPIs);

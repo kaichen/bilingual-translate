@@ -65,4 +65,6 @@ Gemma 4 模型由 Chrome 的实验配置和组件分发管理，扩展不传模�
 
 下载由设置面板的 `initializeChromeAI` 显式启动，`getChromeAIStatus` 返回下载进度。后台跨页面串行执行原生任务，复用检测器和当前语言对会话，空闲 60 秒销毁。Prompt 每块从仅含系统提示的基础会话克隆并释放，预留一半上下文给输出。
 
+大模型会话必须带 `samplingMode: 'most-predictable'`，否则 Chrome 154 的 Gemma 4 直接返回 unavailable。页面一次放行最多 8 个大模型请求，后台把排队中同配置的短段落用 `[[n]]` 标记合并成一次推理（`translateBatchWithPrompt`）；标记缺失或重复时逐段重译。短文本按每字符 2 个 token 粗估，不调用 `measureContextUsage`。
+
 原生翻译请求携带配置快照、requestId 和推理超时；后台通过 AbortSignal 处理超时，`cancelChromeTranslation` 按发送页面隔离取消。确定性的模型/语言状态不会走网络重试。缓存包含引擎、源语言和 Prompt 模板版本，防止读到旧原生译文。

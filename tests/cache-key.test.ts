@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildKey, CACHE_PREFIX, type CacheKeyParams } from "../entrypoints/translate/cache-key";
 import { customModelString, services } from "../entrypoints/config/option";
+import { CHROME_PROMPT_VERSION } from "../entrypoints/providers/llm/chrome-prompt";
 
 const base: CacheKeyParams = {
   service: services.deepseek,
@@ -37,7 +38,7 @@ describe('Chrome 引擎缓存隔离', () => {
     const translator = buildKey('hello', { ...native, chromeTranslationEngine: 'translator' });
     const prompt = buildKey('hello', { ...native, chromeTranslationEngine: 'prompt' });
     expect(translator).not.toBe(prompt);
-    expect(prompt).toContain('prompt-v1');
+    expect(prompt).toContain(CHROME_PROMPT_VERSION);
     expect(translator).not.toBe(`${CACHE_PREFIX}_1_chromeTranslator__zh-Hans_hello`);
     expect(buildKey('hello', { ...native, from: 'ja' })).not.toBe(translator);
   });

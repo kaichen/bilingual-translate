@@ -146,7 +146,8 @@ export class ChromeAIService {
     }
 
     private async getTranslator(source: string, to: string, signal: AbortSignal, download: boolean): Promise<NativeTranslator> {
-        const key = `${source}:${to}`;
+        // 键用归一化后的语言码，zh-Hans 与 zh 不会被当成两个语言对。
+        const key = `${chromeLanguage(source)}:${chromeLanguage(to)}`;
         if (this.translator?.key === key) return this.translator.session;
         const api = this.apis().Translator;
         if (!api) throw new Error('Chrome 原生翻译 API 不可用');
@@ -160,7 +161,8 @@ export class ChromeAIService {
     }
 
     private async getModel(source: string, to: string, signal: AbortSignal, download: boolean): Promise<NativeLanguageModel> {
-        const key = `${source}:${to}`;
+        // 键用归一化后的语言码，zh-Hans 与 zh 不会被当成两个语言对。
+        const key = `${chromeLanguage(source)}:${chromeLanguage(to)}`;
         if (this.model?.key === key) return this.model.session;
         const api = this.apis().LanguageModel;
         if (!api) throw new Error('Chrome Prompt API 不可用');

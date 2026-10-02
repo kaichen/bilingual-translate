@@ -115,6 +115,15 @@ describe('Chrome 原生 AI', () => {
         expect(apis.Translator!.create).toHaveBeenLastCalledWith(expect.objectContaining({ sourceLanguage: 'zh', targetLanguage: 'en' }));
     });
 
+    it('同一语言对的不同写法复用会话，不重复创建', async () => {
+        const settings = { ...translatorSettings, sources: ['zh-Hans'], to: 'en' };
+        detected = 'und';
+        await service.translate('你好', settings, signal());
+        detected = 'zh';
+        await service.translate('你好', settings, signal());
+        expect(apis.Translator!.create).toHaveBeenCalledTimes(1);
+    });
+
     it('汉字混合日语使用检测结果；不把检测失败的文本当成英语', async () => {
         detected = 'ja';
         await service.translate('今日は日本語です', translatorSettings, signal());

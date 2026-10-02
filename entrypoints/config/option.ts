@@ -13,7 +13,7 @@ export const customModelString = "自定义模型";
 export const options = {
     chromeTranslationEngine: [
         {value: 'translator', label: '原生翻译'},
-        {value: 'prompt', label: '内置大模型（Gemma 4）'},
+        {value: 'prompt', label: 'Chrome Gemma 4'},
     ],
     // 是否即时翻译
     autoTranslate: [

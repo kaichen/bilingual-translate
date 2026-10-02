@@ -39,17 +39,52 @@ export function detectlang(origin: string): string {
 // 短文本的语言检测不可靠，低于这个长度不按原文语言列表过滤。
 const SOURCE_FILTER_MIN_LENGTH = 20;
 
-// 文本是否属于「需要翻译的原文语言」。列表为空表示全部翻译；检测不出语言时也放行。
-export function isSourceLanguageAllowed(text: string, sourceLanguages: string[]): boolean {
-    const trimmed = text.trim();
-    if (!sourceLanguages.length || trimmed.length < SOURCE_FILTER_MIN_LENGTH) return true;
-    const detected = detectlang(trimmed);
-    return detected === 'und' || sourceLanguages.includes(detected);
+// 正文样本至少这么长才用它判断页面语言，否则退回页面声明的语言。
+const PAGE_SAMPLE_MIN_LENGTH = 200;
+const PAGE_SAMPLE_MAX_LENGTH = 2000;
+
+// 页面语言：优先用正文样本检测（声明常常不准），样本太短或检测不出时用 html lang / meta 声明。纯函数，可单测。
+export function resolvePageLanguage(sample: string, declared: string): string | undefined {
+    if (sample.length >= PAGE_SAMPLE_MIN_LENGTH) {
+        const detected = detectlang(sample);
+        if (detected !== 'und') return detected;
+    }
+    const primary = declared.trim().toLowerCase().split(/[-_]/)[0];
+    if (!primary) return undefined;
+    return primary === 'zh' ? 'zh-Hans' : primary;
 }
 
-// 若文本语言已是目标语言（去空白后用 detectlang 判定），或不在原文语言列表内，则跳过翻译。纯函数，可单测。
+let pageLanguageCache: { url: string; language?: string } | undefined;
+
+// 读取当前页面的语言，每个地址只算一次；正文还没加载够时不缓存。
+export function getPageLanguage(): string | undefined {
+    if (typeof document === 'undefined') return undefined;
+    if (pageLanguageCache?.url === location.href) return pageLanguageCache.language;
+    const root = document.querySelector<HTMLElement>('main, article') ?? document.body;
+    const sample = (root?.innerText ?? root?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, PAGE_SAMPLE_MAX_LENGTH);
+    const declared = document.documentElement.lang
+        || document.querySelector('meta[http-equiv="content-language" i]')?.getAttribute('content')
+        || document.querySelector('meta[property="og:locale"]')?.getAttribute('content')
+        || '';
+    const language = resolvePageLanguage(sample, declared);
+    if (sample.length >= PAGE_SAMPLE_MIN_LENGTH) pageLanguageCache = { url: location.href, language };
+    return language;
+}
+
+// 文本是否属于「需要翻译的原文语言」。列表为空表示全部翻译。
+// 短文本或检测不出语言时按页面语言判断；页面语言也未知时放行。
+export function isSourceLanguageAllowed(text: string, sourceLanguages: string[], pageLanguage: () => string | undefined = getPageLanguage): boolean {
+    if (!sourceLanguages.length) return true;
+    const trimmed = text.trim();
+    const detected = trimmed.length >= SOURCE_FILTER_MIN_LENGTH ? detectlang(trimmed) : 'und';
+    const language = detected === 'und' ? pageLanguage() : detected;
+    return !language || sourceLanguages.includes(language);
+}
+
+// 空白文本、已是目标语言（去空白后用 detectlang 判定）、或不在原文语言列表内，都跳过翻译。
 export function shouldSkipTranslation(text: string, targetLang: string, sourceLanguages: string[] = []): boolean {
-    return detectlang(text.replace(/[\s　]/g, '')) === targetLang || !isSourceLanguageAllowed(text, sourceLanguages);
+    const compact = (text ?? '').replace(/[\s　]/g, '');
+    return !compact || detectlang(compact) === targetLang || !isSourceLanguageAllowed(text, sourceLanguages);
 }
 
 // 获取触摸点的中心位置

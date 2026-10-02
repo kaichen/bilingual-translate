@@ -182,14 +182,18 @@ export class ChromeAIService {
         const best = (await detector.detect(text, { signal }))[0];
         let source: string | undefined = best?.detectedLanguage;
         const { sources } = settings;
-        if (!source || source === 'und' || best.confidence < DETECTION_MIN_CONFIDENCE) {
+        const detected = !!source && source !== 'und';
+        if (!sources.length) {
+            // 未勾选 = 翻译所有语言：不看置信度，检测不出才保持原样。
+            if (!detected) return undefined;
+        } else if (!detected || best.confidence < DETECTION_MIN_CONFIDENCE) {
             // 检测不出或把握不足：只勾选一种原文语言时按它翻译，否则保持原样。
             if (sources.length !== 1) return undefined;
             source = sources[0];
-        } else if (sources.length && !sources.some(language => primaryLanguage(language) === primaryLanguage(source!))) {
+        } else if (!sources.some(language => primaryLanguage(language) === primaryLanguage(source!))) {
             return undefined;
         }
-        return chromeLanguage(source) === chromeLanguage(settings.to) ? undefined : source;
+        return chromeLanguage(source!) === chromeLanguage(settings.to) ? undefined : source;
     }
 
     // 下载只由设置面板的显式操作触发，不占普通翻译的超时窗口。

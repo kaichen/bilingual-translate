@@ -123,8 +123,12 @@ describe('Chrome 原生 AI', () => {
         await expect(service.translate('日本語', translatorSettings, signal())).resolves.toBe('日本語');
         confidence = 0.2;
         detected = 'fr';
-        await expect(service.translate('Menu', translatorSettings, signal())).resolves.toBe('Menu');
-        expect(apis.Translator!.create).toHaveBeenCalledTimes(1);
+        // 未勾选原文语言时不看置信度：短标题也要翻译。
+        await expect(service.translate('Menu', translatorSettings, signal())).resolves.toBe('你好');
+        expect(apis.Translator!.create).toHaveBeenLastCalledWith(expect.objectContaining({ sourceLanguage: 'fr' }));
+        // 勾选了原文语言时低置信度不采用检测结果：多选保持原样。
+        await expect(service.translate('Menu', { ...translatorSettings, sources: ['fr', 'en'] }, signal())).resolves.toBe('Menu');
+        expect(apis.Translator!.create).toHaveBeenCalledTimes(2);
     });
 
     it('Prompt 声明实际源/目标语言；每段克隆、释放独立会话', async () => {

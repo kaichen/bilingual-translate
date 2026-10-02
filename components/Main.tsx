@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { storage } from '@wxt-dev/storage';
 import browser from 'webextension-polyfill';
 import { defaultOption, options, services } from '../entrypoints/config/option';
-import { models, providerOf, type Need } from '@/entrypoints/providers/registry';
+import { chromeEngineOf, models, providerOf, type Need } from '@/entrypoints/providers/registry';
 import { Config } from '@/entrypoints/config/model';
 import { parseHotkey } from './hotkey';
 import { type BackgroundMessage, type ContentMessage, type ContextMenuTranslateResponse, type TranslationProgressResponse, type PageDomainResponse, type PageTranslatedResponse } from '@/entrypoints/utils/messages';
@@ -493,7 +493,7 @@ export default function Main() {
             </SettingRow>
           )}
 
-          <SettingRow label="翻译服务" hint="机器翻译：快速稳定；云端 AI 需要令牌；Chrome 内置 AI 在本地运行">
+          <SettingRow label="翻译服务" hint="机器翻译：快速稳定；云端 AI 需要令牌；带「离线」的 Chrome 服务在本机运行，与在线的谷歌翻译无关">
             <SelectControl value={config.service} options={computed.filteredServices} onChange={(value) => setField('service', value)} />
           </SettingRow>
 
@@ -502,9 +502,8 @@ export default function Main() {
           </SettingRow>
 
           {computed.showNativeAI && <ChromeAISettings
-            key={`${config.chromeTranslationEngine}:${config.from}:${config.to}`}
-            settings={{ engine: config.chromeTranslationEngine, from: config.from, to: config.to }}
-            onEngine={value => setField('chromeTranslationEngine', value)}
+            key={`${config.service}:${config.from}:${config.to}`}
+            settings={{ engine: chromeEngineOf(config.service), from: config.from, to: config.to }}
             onSource={value => setField('from', value)}
           />}
 

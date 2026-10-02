@@ -4,7 +4,7 @@
 
 ## 项目简介
 
-**bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、全文翻译、悬停翻译、输入框翻译，支持微软、谷歌、Chrome 内置 AI、自定义接口、DeepSeek、OpenRouter 六个翻译服务。
+**bilingual translate** —— 开源浏览器双语翻译扩展。支持双语对照、全文翻译、悬停翻译、输入框翻译，支持微软、谷歌、Chrome 本地翻译、Chrome Gemma 4、自定义接口、DeepSeek、OpenRouter 七个翻译服务。
 
 技术栈：**WXT 0.20** + **Preact 10** + **TypeScript**，浏览器扩展 Manifest V3，目标 Chrome / Edge。
 

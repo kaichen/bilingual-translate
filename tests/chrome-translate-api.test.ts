@@ -16,7 +16,7 @@ import { cancelAllTranslations, translateText } from '../entrypoints/translate/t
 
 const send = vi.mocked(browser.runtime.sendMessage);
 beforeEach(() => {
-    Object.assign(config, new Config({ service: services.chromeTranslator, chromeTranslationEngine: 'prompt' }));
+    Object.assign(config, new Config({ service: services.chromeGemma }));
     send.mockReset();
     localStorage.clear();
 });
@@ -45,7 +45,7 @@ describe('Chrome 翻译管线', () => {
 
     it('取消发送当前活跃请求编号，同时拒绝未发送的排队请求', async () => {
         // 原生翻译逐段串行，第二个请求留在页面队列里
-        config.chromeTranslationEngine = 'translator';
+        config.service = services.chromeTranslator;
         let complete!: (response: unknown) => void;
         send.mockImplementation(message => (message as { type?: string }).type === 'cancelChromeTranslation'
             ? Promise.resolve({ success: true }) : new Promise(resolve => { complete = resolve; }));
@@ -67,12 +67,12 @@ describe('Chrome 翻译管线', () => {
         try {
             let complete!: (response: unknown) => void;
             send.mockImplementation(() => new Promise(resolve => { complete = resolve; }));
-            config.chromeTranslationEngine = 'translator';
+            config.service = services.chromeTranslator;
             const native = translateText('Hello', '', { useCache: false });
             await vi.advanceTimersByTimeAsync(5000);
             complete({ success: true, result: '你好' });
             await native;
-            config.chromeTranslationEngine = 'prompt';
+            config.service = services.chromeGemma;
             const fast = translateText('Hello', '', { useCache: false });
             await vi.advanceTimersByTimeAsync(1000);
             complete({ success: true, result: '你好' });
@@ -93,7 +93,7 @@ describe('Chrome 翻译管线', () => {
         let complete!: (response: unknown) => void;
         send.mockImplementation(() => new Promise(resolve => { complete = resolve; }));
         const result = translateText('Hello', '');
-        config.chromeTranslationEngine = 'translator';
+        config.service = services.chromeTranslator;
         complete({ success: true, result: '你好' });
         expect(await result).toBe('你好');
         expect(localStorage.length).toBe(0);

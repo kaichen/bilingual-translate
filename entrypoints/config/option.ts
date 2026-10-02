@@ -2,7 +2,8 @@ export const services = {
     // 传统机器翻译
     microsoft: "microsoft",
     google: "google",
-    chromeTranslator: "chromeTranslator", // Chrome 内置翻译 API
+    chromeTranslator: "chromeTranslator", // Chrome Translator API（本地专用翻译模型）
+    chromeGemma: "chromeGemma", // Chrome Prompt API（本地 Gemma 4 大模型）
     // 大模型翻译
     custom: "custom",
     deepseek: "deepseek",
@@ -11,10 +12,6 @@ export const services = {
 
 export const customModelString = "自定义模型";
 export const options = {
-    chromeTranslationEngine: [
-        {value: 'translator', label: '原生翻译'},
-        {value: 'prompt', label: 'Chrome Gemma 4'},
-    ],
     // 是否即时翻译
     autoTranslate: [
         {value: true, label: "开启"},
@@ -63,10 +60,11 @@ export const options = {
         // 传统机器翻译
         {value: "machine", label: "机器翻译", disabled: true},
         {value: services.microsoft, label: "微软翻译"},
-        {value: services.google, label: "谷歌翻译"},
+        {value: services.google, label: "谷歌翻译（在线）"},
+        {value: services.chromeTranslator, label: "Chrome 本地翻译（离线）"},
         // 大模型翻译
         {value: "ai", label: "AI翻译", disabled: true},
-        {value: services.chromeTranslator, label: "Chrome内置AI翻译⭐"},
+        {value: services.chromeGemma, label: "Chrome Gemma 4（离线）"},
         {value: services.deepseek, label: "DeepSeek️"},
         {value: services.openrouter, label: "OpenRouter"},
         {value: services.custom, label: "自定义接口⭐️"},
@@ -126,7 +124,6 @@ export const defaultOption = {
     display: 1,
     hotkey: "Control",
     service: services.microsoft,
-    chromeTranslationEngine: "translator" as const,
     custom: "http://localhost:11434/v1/chat/completions",
     system_role:
         "You are a professional, authentic machine translation engine.",

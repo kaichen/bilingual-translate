@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import browser from 'webextension-polyfill';
 import { options } from '@/entrypoints/config/option';
-import type { ChromeAISettings as Settings, ChromeAIStatus, ChromeTranslationEngine } from '@/entrypoints/providers/chrome-ai-types';
+import type { ChromeAISettings as Settings, ChromeAIStatus } from '@/entrypoints/providers/chrome-ai-types';
 import type { BackgroundMessage } from '@/entrypoints/utils/messages';
 
 // chrome:// 地址不能用普通链接跳转，交给 tabs.create；被拒绝时退回复制地址。
@@ -21,9 +21,8 @@ function FlagLink({ url }: { url: string }) {
     </>;
 }
 
-export default function ChromeAISettings({ settings, onEngine, onSource }: {
+export default function ChromeAISettings({ settings, onSource }: {
     settings: Settings;
-    onEngine: (engine: ChromeTranslationEngine) => void;
     onSource: (language: string) => void;
 }) {
     const [status, setStatus] = useState<ChromeAIStatus>();
@@ -74,15 +73,7 @@ export default function ChromeAISettings({ settings, onEngine, onSource }: {
 
     return <div className="bt-native-ai">
         <div className="bt-setting-row">
-            <label className="bt-setting-label" htmlFor="bt-chrome-engine">Chrome 引擎</label>
-            <div className="bt-setting-control">
-                <select id="bt-chrome-engine" className="bt-select" value={settings.engine} onChange={event => onEngine(event.currentTarget.value as ChromeTranslationEngine)}>
-                    {options.chromeTranslationEngine.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-            </div>
-        </div>
-        <div className="bt-setting-row">
-            <label className="bt-setting-label" htmlFor="bt-chrome-source">源语言</label>
+            <label className="bt-setting-label" htmlFor="bt-chrome-source">原文语言</label>
             <div className="bt-setting-control">
                 <select id="bt-chrome-source" className="bt-select" value={settings.from} onChange={event => onSource(event.currentTarget.value)}>
                     <option value="auto">自动检测</option>

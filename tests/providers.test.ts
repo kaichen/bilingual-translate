@@ -4,7 +4,7 @@ import { options, services } from "../entrypoints/config/option";
 
 // 锁定保留服务及其配置能力。
 const GOLDEN = {
-    machine: [services.microsoft, services.google, services.chromeTranslator],
+    machine: [services.microsoft, services.google, services.chromeTranslator, services.chromeGemma],
     AI: [services.custom, services.deepseek, services.openrouter],
     useToken: [services.custom, services.deepseek, services.openrouter],
     useModel: [services.custom, services.deepseek, services.openrouter],
@@ -34,9 +34,9 @@ describe("providers — 派生 urls / models 键集一致", () => {
 });
 
 describe("providers — 单一真相源不变量", () => {
-    it("服务常量只包含六个保留服务", () => {
+    it("服务常量只包含七个保留服务", () => {
         expect(Object.values(services).sort()).toEqual([
-            "microsoft", "google", "chromeTranslator", "custom", "deepseek", "openrouter",
+            "microsoft", "google", "chromeTranslator", "chromeGemma", "custom", "deepseek", "openrouter",
         ].sort());
         expect(new Set(Object.values(services))).toEqual(new Set(PROVIDERS.map((p) => p.name)));
     });

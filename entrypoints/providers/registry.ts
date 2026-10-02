@@ -1,4 +1,5 @@
 import { customModelString, services } from "../config/option";
+import type { ChromeTranslationEngine } from "./chrome-ai-types";
 
 // Provider 注册表：每个翻译服务一条记录的单一真相源。
 // servicesType / urls / models 全部由 PROVIDERS 派生，不再手工并列维护。
@@ -27,6 +28,8 @@ export const PROVIDERS: Provider[] = [
     {name: services.microsoft, kind: "machine", needs: []},
     {name: services.google, kind: "machine", needs: ["proxy"]},
     {name: services.chromeTranslator, kind: "machine", needs: ["nativeAI"]},
+    // 提示词固定、无令牌和模型配置，按机器翻译归类
+    {name: services.chromeGemma, kind: "machine", needs: ["nativeAI"]},
 
     // 大模型翻译
     {name: services.custom, kind: "ai", url: "https://localhost:11434/v1/chat/completions", models: ["gpt-5-nano", "gpt-5-mini", "gpt5", "gpt-4o", "gemma:7b", "llama2:7b", "mistral:7b", customModelString], needs: ["token", "model", "customUrl"]},
@@ -37,6 +40,10 @@ export const PROVIDERS: Provider[] = [
 const byName = new Map<string, Provider>(PROVIDERS.map((p) => [p.name, p]));
 
 export const providerOf = (name: string): Provider | undefined => byName.get(name);
+
+// 两个 Chrome 本地服务共用一套实现，引擎由服务名决定。
+export const chromeEngineOf = (service: string): ChromeTranslationEngine =>
+    service === services.chromeGemma ? "prompt" : "translator";
 
 // 派生视图：以下全部从 PROVIDERS 计算得出 ----------------------------------
 

@@ -45,10 +45,12 @@ describe("Config — 载入保留服务的配置", () => {
         expect(new Config({ ...stored, service }).service).toBe(service);
     });
 
-    it('Chrome 引擎默认原生翻译，持久化 Prompt，非法值回到默认', () => {
-        expect(new Config(stored).chromeTranslationEngine).toBe('translator');
-        expect(new Config({ ...stored, chromeTranslationEngine: 'prompt' }).chromeTranslationEngine).toBe('prompt');
-        expect(new Config({ ...stored, chromeTranslationEngine: 'old' } as never).chromeTranslationEngine).toBe('translator');
+    it('旧配置的 Chrome 引擎字段迁移为独立服务', () => {
+        const chrome = { ...stored, service: services.chromeTranslator };
+        expect(new Config({ ...chrome, chromeTranslationEngine: 'prompt' } as never).service).toBe(services.chromeGemma);
+        expect(new Config({ ...chrome, chromeTranslationEngine: 'translator' } as never).service).toBe(services.chromeTranslator);
+        expect(new Config(chrome).service).toBe(services.chromeTranslator);
+        expect(JSON.stringify(new Config({ ...chrome, chromeTranslationEngine: 'prompt' } as never))).not.toContain('chromeTranslationEngine');
     });
 
     it("首次启动与跨上下文更新均处理旧服务配置", async () => {

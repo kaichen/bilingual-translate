@@ -2,7 +2,7 @@ import { checkConfig } from "../config/check";
 import { searchClassName, skipNode } from "./skip";
 import { cache } from "../translate/cache";
 import { options } from "../config/option";
-import { servicesType } from "@/entrypoints/providers/registry";
+import { chromeEngineOf, servicesType } from "@/entrypoints/providers/registry";
 import { insertFailedTip, insertLoadingSpinner } from "../ui/icon";
 import { styles } from "@/entrypoints/utils/constant";
 import {
@@ -707,7 +707,7 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
 export function singleTranslate(node: any) {
     if (shouldSkipTranslation(node.textContent, config.to)) return;
 
-    let origin = servicesType.isAI(config.service) || (servicesType.isNativeAI(config.service) && config.chromeTranslationEngine === 'prompt')
+    let origin = servicesType.isAI(config.service) || (servicesType.isNativeAI(config.service) && chromeEngineOf(config.service) === 'prompt')
         ? LLMStandardHTML(node) : node.innerHTML;
     let spinner = insertLoadingSpinner(node);
     

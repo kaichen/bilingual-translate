@@ -10,7 +10,7 @@ import { cache } from './cache';
 import { shouldSkipTranslation } from '../utils/common';
 import { storage } from '@wxt-dev/storage';
 import { TranslationCancelledError } from './errors';
-import { servicesType } from '../providers/registry';
+import { chromeEngineOf, servicesType } from '../providers/registry';
 import { sendSuccessMessage } from '../ui/tip';
 import { PROMPT_BATCH_MAX_SEGMENTS } from '../providers/llm/chrome-prompt';
 import type { ChromeTranslationResponse, TranslateRequest } from '../utils/messages';
@@ -21,7 +21,7 @@ const isDev = process.env.NODE_ENV === 'development';
 // 把并发上限的实时读取注入翻译队列（队列本身不 import config，保持可单测）
 // 原生翻译逐段串行；大模型放行一批，由后台合并成一次推理。
 configureQueue(() => !servicesType.isNativeAI(config.service) ? config.maxConcurrentTranslations
-  : config.chromeTranslationEngine === 'prompt' ? PROMPT_BATCH_MAX_SEGMENTS : 1);
+  : chromeEngineOf(config.service) === 'prompt' ? PROMPT_BATCH_MAX_SEGMENTS : 1);
 const activeChromeRequests = new Set<string>();
 
 // 后台空闲被回收后，本地大模型要重新加载；等待较久时提示一次，避免用户以为卡死。
@@ -74,7 +74,7 @@ export async function translateText(origin: string, context: string = document.t
   storage.setItem('local:config', JSON.stringify(config));
 
   const nativeSettings = servicesType.isNativeAI(config.service) ? {
-    engine: config.chromeTranslationEngine, from: config.from, to: config.to,
+    engine: chromeEngineOf(config.service), from: config.from, to: config.to,
   } : undefined;
 
   // 使用队列处理翻译请求
@@ -118,7 +118,7 @@ export async function translateText(origin: string, context: string = document.t
 
         // 缓存翻译结果
         if (useCache && (!nativeSettings || (servicesType.isNativeAI(config.service)
-          && config.chromeTranslationEngine === nativeSettings.engine && config.from === nativeSettings.from && config.to === nativeSettings.to))) {
+          && chromeEngineOf(config.service) === nativeSettings.engine && config.from === nativeSettings.from && config.to === nativeSettings.to))) {
           cache.localSet(origin, result);
         }
 

@@ -11,5 +11,6 @@ export const _service: ServiceMap = {
     [services.microsoft]: microsoft,
     [services.google]: google,
     [services.chromeTranslator]: chromeTranslator,
+    [services.chromeGemma]: chromeTranslator,
     ...chatServices,
 };

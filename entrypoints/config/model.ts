@@ -1,8 +1,6 @@
 import { defaultOption, services } from "./option";
 import { providerOf } from "@/entrypoints/providers/registry";
 
-import type { ChromeTranslationEngine } from '@/entrypoints/providers/chrome-ai-types';
-
 interface IMapping {
     [key: string]: string;
 }
@@ -20,7 +18,6 @@ export class Config {
     style: number;
     display: number = 1;
     service: string;
-    chromeTranslationEngine: ChromeTranslationEngine; // Chrome 原生翻译或 Prompt 大模型
     token: IMapping;
     model: IMapping;
     customModel: IMapping;  // 自定义模型名称
@@ -50,7 +47,6 @@ export class Config {
         this.display = defaultOption.display;
         this.hotkey = defaultOption.hotkey;
         this.service = defaultOption.service;
-        this.chromeTranslationEngine = defaultOption.chromeTranslationEngine;
         this.token = {};
         this.model = {};
         this.customModel = {};
@@ -74,7 +70,10 @@ export class Config {
         for (const key of ['token', 'model', 'customModel', 'proxy', 'system_role', 'user_role'] as const) {
             this[key] = Object.fromEntries(Object.entries(this[key]).filter(([service]) => providerOf(service)));
         }
-        if (!['translator', 'prompt'].includes(this.chromeTranslationEngine)) this.chromeTranslationEngine = defaultOption.chromeTranslationEngine;
+        // 旧配置用引擎字段区分两种 Chrome 本地翻译，现在各是一个服务。
+        if (this.service === services.chromeTranslator && (values as { chromeTranslationEngine?: string }).chromeTranslationEngine === 'prompt') {
+            this.service = services.chromeGemma;
+        }
         if (!providerOf(this.service)) this.service = defaultOption.service;
     }
 }

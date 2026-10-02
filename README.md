@@ -4,7 +4,7 @@
 
 网页翻译浏览器插件，双语对照呈现。
 
-支持微软翻译、谷歌翻译、Chrome 内置 AI 翻译、自定义接口、DeepSeek 和 OpenRouter。
+支持微软翻译、谷歌翻译、Chrome 本地翻译、Chrome Gemma 4、自定义接口、DeepSeek 和 OpenRouter。
 
 ## 安装
 
@@ -17,13 +17,13 @@ pnpm build
 
 ## Chrome 内置 AI
 
-Chrome 服务提供两种引擎：默认「原生翻译」使用 Translator；「Chrome Gemma 4」使用 Prompt API。两者在扩展后台本地执行，无需 API 令牌。
+翻译服务里有两个在本机运行的 Chrome 选项，都无需 API 令牌，也都与在线的谷歌翻译无关：「Chrome 本地翻译（离线）」使用 Translator API 的专用翻译模型，速度快；「Chrome Gemma 4（离线）」使用 Prompt API 的 Gemma 4 大模型，速度较慢。
 
 Gemma 4 使用 Chrome 154 或更高版本：
 
 1. 在 `chrome://flags/#gemma4-for-built-in-ai` 选择 Enabled。
 2. 在 `chrome://flags/#prompt-api` 选择 Enabled Multilingual，以支持中文等语言。
-3. 重启 Chrome，在插件中选择 Chrome 内置 AI → Chrome Gemma 4。
+3. 重启 Chrome，在插件的翻译服务中选择「Chrome Gemma 4（离线）」。
 4. 选择目标语言，点击「下载并初始化模型」。状态显示就绪后开始翻译。
 
 模型及版本由 Chrome 管理，插件不能指定模型版本。实际支持以设置面板的可用状态为准。首次下载需要网络和足够磁盘空间，之后可以离线使用。[Chrome 官方要求](https://developer.chrome.com/docs/ai/get-started)

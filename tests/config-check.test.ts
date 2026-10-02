@@ -27,7 +27,7 @@ describe("validateConfig — 纯配置校验（不读 config、不弹 toast）",
     expect(r.reason).toContain("重新选择");
   });
 
-  it.each([services.microsoft, services.google, services.chromeTranslator])("%s 不需要令牌和模型", (service) => {
+  it.each([services.microsoft, services.google, services.chromeTranslator, services.chromeGemma])("%s 不需要令牌和模型", (service) => {
     expect(validateConfig({ ...ok, service, token: {}, model: {} }).valid).toBe(true);
   });
 

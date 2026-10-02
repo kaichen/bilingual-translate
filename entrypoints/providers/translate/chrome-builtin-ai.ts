@@ -1,4 +1,5 @@
 import { config } from '@/entrypoints/config/config';
+import { chromeEngineOf } from '../registry';
 import { chromeSystemPrompt, PROMPT_BATCH_MAX_SEGMENTS, translateBatchWithPrompt } from '../llm/chrome-prompt';
 import type {
     AIAvailability, DownloadMonitor, ChromeAIAPIs, ChromeAISettings, ChromeAIStatus, NativeDetector,
@@ -291,6 +292,6 @@ export const chromeAI = new ChromeAIService(() => globalThis as ChromeAIAPIs);
 
 export default async function chromeTranslator(message: TranslateRequest): Promise<string> {
     return chromeAI.translate(message.origin, message.chromeAI || {
-        engine: config.chromeTranslationEngine, from: config.from, to: config.to,
+        engine: chromeEngineOf(config.service), from: config.from, to: config.to,
     }, new AbortController().signal, message.timeout);
 }

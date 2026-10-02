@@ -4,7 +4,7 @@
 
 ## 翻译服务（Provider）
 
-一个可被选用的翻译来源——机器翻译引擎或 AI 大模型（deepseek、microsoft、google…）。名字常量集中在 `config/option.ts` 的 `services`。当前保留微软、谷歌、Chrome 内置 AI、自定义接口、DeepSeek、OpenRouter。
+一个可被选用的翻译来源——机器翻译引擎或 AI 大模型（deepseek、microsoft、google…）。名字常量集中在 `config/option.ts` 的 `services`。当前保留微软、谷歌、Chrome 本地翻译、Chrome Gemma 4、自定义接口、DeepSeek、OpenRouter。
 
 ## Provider 注册表（Provider Registry / PROVIDERS）
 
@@ -59,7 +59,7 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 ## Chrome 内置 AI
 
-`providers/translate/chrome-builtin-ai.ts` 直接在扩展 Service Worker 调用当前 `Translator`、`LanguageDetector`、`LanguageModel`。`chromeTranslationEngine` 为 `translator`（默认）或 `prompt`，两种引擎仍共用 `chromeTranslator` provider；`nativeAI` 能力用于设置展示与请求路由。
+`providers/translate/chrome-builtin-ai.ts` 直接在扩展 Service Worker 调用当前 `Translator`、`LanguageDetector`、`LanguageModel`。`chromeTranslator`（Translator API）和 `chromeGemma`（Prompt API）是两个独立服务，共用这一套实现；引擎由 `registry.ts` 的 `chromeEngineOf(service)` 从服务名派生，不再有单独的引擎配置项。`nativeAI` 能力用于设置展示与请求路由。
 
 Gemma 4 模型由 Chrome 的实验配置和组件分发管理，扩展不传模型名称。Prompt 的真实输入语言包含英语系统提示和源语言，输出声明目标语言；翻译提示与分块逻辑位于 `providers/llm/chrome-prompt.ts`。
 

@@ -117,6 +117,12 @@ export function getTranslationTargetSourceKey(target: TranslationTarget): string
     return getTranslationTargetSourceText(target).replace(/\s+/g, ' ').trim();
 }
 
+// 译文为空或与原文相同（trim 后相等也算）：说明无需翻译，调用方不应追加译文
+export function isUntranslatedResult(origin: string, text: string | null | undefined): boolean {
+    const result = (text ?? '').trim();
+    return !result || result === (origin ?? '').trim();
+}
+
 export function resetTranslationTargetDom(target: TranslationTarget, sourceKey?: string) {
     if (target.kind === 'element') {
         target.element.querySelectorAll(TRANSLATION_UI_SELECTOR).forEach(node => node.remove());

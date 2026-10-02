@@ -12,6 +12,7 @@ import {
     getTranslationTargetSourceKey,
     getTranslationTargetSourceText,
     grabTranslationTarget,
+    isUntranslatedResult,
     insertTranslationNodeForTarget,
     LLMStandardHTML,
     resetTranslationTargetDom,
@@ -665,7 +666,10 @@ export function handleSingleTranslation(node: any, slide: boolean) {
 
 
 function bilingualTranslate(node: any, nodeOuterHTML: any) {
-    if (shouldSkipByLanguage(node.textContent)) return;
+    if (shouldSkipByLanguage(node.textContent)) {
+        revertElementToUntranslated(node);
+        return;
+    }
 
     let origin = node.textContent;
     let spinner = insertLoadingSpinner(node);
@@ -675,6 +679,10 @@ function bilingualTranslate(node: any, nodeOuterHTML: any) {
         .then((text: string) => {
             spinner.remove();
             htmlSet.delete(nodeOuterHTML);
+            if (isUntranslatedResult(origin, text)) {
+                revertElementToUntranslated(node);
+                return;
+            }
             bilingualAppendChild(node, text);
         })
         .catch((error: Error) => {
@@ -684,9 +692,19 @@ function bilingualTranslate(node: any, nodeOuterHTML: any) {
         });
 }
 
+// 无需翻译：撤销本次流程给元素加的标记，页面保持原样（防重复处理的 processedTargetSourceKeys 保留）
+function revertElementToUntranslated(node: Element) {
+    const nodeId = node.getAttribute(TRANSLATED_ID_ATTR);
+    if (nodeId) originalContents.delete(nodeId);
+    resetTranslationTargetDom({ kind: 'element', host: node, nodes: [node], anchor: node, element: node });
+}
+
 function handleBilingualTargetTranslation(target: TranslationTarget) {
     const origin = getTranslationTargetSourceText(target);
-    if (shouldSkipByLanguage(origin)) return;
+    if (shouldSkipByLanguage(origin)) {
+        if (target.kind === 'element') revertElementToUntranslated(target.element);
+        return;
+    }
 
     const cached = cache.localGet(origin);
     if (cached) {
@@ -696,6 +714,10 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
 
     translateText(origin, document.title, { skipLanguageCheck: true })
         .then((text: string) => {
+            if (isUntranslatedResult(origin, text)) {
+                if (target.kind === 'element') revertElementToUntranslated(target.element);
+                return;
+            }
             appendBilingualTranslationForTarget(target, text);
         })
         .catch((error: Error) => {
@@ -705,7 +727,10 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
 
 
 export function singleTranslate(node: any) {
-    if (shouldSkipByLanguage(node.textContent)) return;
+    if (shouldSkipByLanguage(node.textContent)) {
+        revertElementToUntranslated(node);
+        return;
+    }
 
     let origin = servicesType.isAI(config.service) || (servicesType.isNativeAI(config.service) && chromeEngineOf(config.service) === 'prompt')
         ? LLMStandardHTML(node) : node.innerHTML;
@@ -718,7 +743,10 @@ export function singleTranslate(node: any) {
             
             text = beautyHTML(text);
             
-            if (!text || origin === text) return;
+            if (isUntranslatedResult(origin, text)) {
+                revertElementToUntranslated(node);
+                return;
+            }
             
             let oldOuterHtml = node.outerHTML;
             node.innerHTML = text;

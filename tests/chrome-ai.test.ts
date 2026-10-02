@@ -11,10 +11,12 @@ let apis: ChromeAIAPIs;
 let clones: NativeLanguageModel[];
 let base: NativeLanguageModel;
 let detected = 'en';
+let confidence = 0.99;
 const signal = () => new AbortController().signal;
 
 beforeEach(() => {
     detected = 'en';
+    confidence = 0.99;
     clones = [];
     base = {
         contextWindow: 1000, contextUsage: 20,
@@ -36,7 +38,7 @@ beforeEach(() => {
         },
         LanguageDetector: {
             availability: vi.fn(async () => 'available' as AIAvailability),
-            create: vi.fn(async () => ({ detect: vi.fn(async () => [{ detectedLanguage: detected, confidence: 0.99 }]), destroy: vi.fn() })),
+            create: vi.fn(async () => ({ detect: vi.fn(async () => [{ detectedLanguage: detected, confidence }]), destroy: vi.fn() })),
         },
     };
     service = new ChromeAIService(() => apis);
@@ -118,7 +120,11 @@ describe('Chrome 原生 AI', () => {
         await service.translate('今日は日本語です', translatorSettings, signal());
         expect(apis.Translator!.create).toHaveBeenCalledWith(expect.objectContaining({ sourceLanguage: 'ja' }));
         detected = 'und';
-        await expect(service.translate('日本語', translatorSettings, signal())).rejects.toThrow('无法检测');
+        await expect(service.translate('日本語', translatorSettings, signal())).resolves.toBe('日本語');
+        confidence = 0.2;
+        detected = 'fr';
+        await expect(service.translate('Menu', translatorSettings, signal())).resolves.toBe('Menu');
+        expect(apis.Translator!.create).toHaveBeenCalledTimes(1);
     });
 
     it('Prompt 声明实际源/目标语言；每段克隆、释放独立会话', async () => {

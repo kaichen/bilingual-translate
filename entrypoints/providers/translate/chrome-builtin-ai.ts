@@ -27,6 +27,8 @@ function validate(settings: ChromeAISettings): void {
     if (!Array.isArray(settings.sources) || !settings.to || settings.to === 'auto') throw new Error('请选择有效的翻译语言');
 }
 
+// 低于这个置信度的检测结果不采用，避免短文本选错语言对。
+const DETECTION_MIN_CONFIDENCE = 0.5;
 // 检测器返回 zh，配置里存 zh-Hans：比较语言时只看主语言。
 const primaryLanguage = (language: string): string => chromeLanguage(language).split('-')[0];
 // 需要预先准备的原文语言；未勾选时先准备英语。
@@ -177,12 +179,12 @@ export class ChromeAIService {
     // 返回这段文字的原文语言；不需要翻译（与目标语言相同或不在原文语言列表内）时返回 undefined。
     private async resolveSource(text: string, settings: ChromeAISettings, signal: AbortSignal): Promise<string | undefined> {
         const detector = await this.getDetector(signal, false);
-        let source = (await detector.detect(text, { signal }))[0]?.detectedLanguage;
+        const best = (await detector.detect(text, { signal }))[0];
+        let source: string | undefined = best?.detectedLanguage;
         const { sources } = settings;
-        if (!source || source === 'und') {
-            // 检测不出语言：只勾选一种时按它翻译，勾选多种时跳过。
-            if (!sources.length) throw new Error('无法检测文本语言，请在设置中勾选原文语言');
-            if (sources.length > 1) return undefined;
+        if (!source || source === 'und' || best.confidence < DETECTION_MIN_CONFIDENCE) {
+            // 检测不出或把握不足：只勾选一种原文语言时按它翻译，否则保持原样。
+            if (sources.length !== 1) return undefined;
             source = sources[0];
         } else if (sources.length && !sources.some(language => primaryLanguage(language) === primaryLanguage(source!))) {
             return undefined;

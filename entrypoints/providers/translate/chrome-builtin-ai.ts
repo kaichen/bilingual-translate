@@ -24,8 +24,13 @@ function promptLanguages(from: string, to: string): PromptLanguages {
 
 function validate(settings: ChromeAISettings): void {
     if (!['translator', 'prompt'].includes(settings.engine)) throw new Error('Chrome 翻译引擎无效');
-    if (!settings.from || !settings.to || settings.to === 'auto') throw new Error('请选择有效的翻译语言');
+    if (!Array.isArray(settings.sources) || !settings.to || settings.to === 'auto') throw new Error('请选择有效的翻译语言');
 }
+
+// 只勾选一种原文语言时直接按它翻译；否则逐段检测。
+const sourceOf = (settings: ChromeAISettings): string => settings.sources.length === 1 ? settings.sources[0] : 'auto';
+// 需要预先准备的原文语言；未勾选时先准备英语。
+const preparedSources = (settings: ChromeAISettings): string[] => settings.sources.length ? settings.sources : ['en'];
 
 // 一条后台串行队列跨标签页共享模型；会话仅在空闲时释放。
 export class ChromeAIService {
@@ -65,21 +70,24 @@ export class ChromeAIService {
 
     private async availability(settings: ChromeAISettings): Promise<AIAvailability> {
         const api = this.apis();
-        const source = settings.from === 'auto' ? 'en' : settings.from;
-        let state: AIAvailability;
-        if (settings.engine === 'prompt') {
-            if (!api.LanguageModel) return 'unavailable';
-            state = await api.LanguageModel.availability(promptLanguages(source, settings.to));
-        } else {
-            if (!api.Translator) return 'unavailable';
-            state = chromeLanguage(source) === chromeLanguage(settings.to) ? 'available'
-                : await api.Translator.availability({ sourceLanguage: chromeLanguage(source), targetLanguage: chromeLanguage(settings.to) });
-        }
-        if (settings.from !== 'auto') return state;
-        if (!api.LanguageDetector) return 'unavailable';
-        const detectorState = await api.LanguageDetector.availability();
         const order: AIAvailability[] = ['unavailable', 'downloading', 'downloadable', 'available'];
-        return order[Math.min(order.indexOf(state), order.indexOf(detectorState))];
+        const states: AIAvailability[] = [];
+        // 每种原文语言各查一次，取最差的状态。
+        for (const source of preparedSources(settings)) {
+            if (settings.engine === 'prompt') {
+                if (!api.LanguageModel) return 'unavailable';
+                states.push(await api.LanguageModel.availability(promptLanguages(source, settings.to)));
+            } else {
+                if (!api.Translator) return 'unavailable';
+                states.push(chromeLanguage(source) === chromeLanguage(settings.to) ? 'available'
+                    : await api.Translator.availability({ sourceLanguage: chromeLanguage(source), targetLanguage: chromeLanguage(settings.to) }));
+            }
+        }
+        if (sourceOf(settings) === 'auto') {
+            if (!api.LanguageDetector) return 'unavailable';
+            states.push(await api.LanguageDetector.availability());
+        }
+        return order[Math.min(...states.map(state => order.indexOf(state)))];
     }
 
     // 区分「接口不存在」和「语言不支持」，让用户知道下一步该做什么。
@@ -90,8 +98,8 @@ export class ChromeAIService {
         } else if (!api.Translator) {
             return '当前 Chrome 没有原生翻译 API，请升级 Chrome。';
         }
-        if (settings.from === 'auto' && (!api.LanguageDetector || await api.LanguageDetector.availability() === 'unavailable')) {
-            return '当前 Chrome 的语言检测不可用，请手动选择源语言。';
+        if (sourceOf(settings) === 'auto' && (!api.LanguageDetector || await api.LanguageDetector.availability() === 'unavailable')) {
+            return '当前 Chrome 的语言检测不可用，请只勾选一种原文语言。';
         }
         return settings.engine === 'prompt'
             ? 'Chrome 大模型不支持所选语言。请按下方步骤开启多语言支持，或更换语言。'
@@ -106,14 +114,14 @@ export class ChromeAIService {
             unavailable: availability === 'unavailable' ? await this.unavailableReason(settings) : '',
             downloadable: '模型尚未下载，点击下载并初始化后即可使用。',
             downloading: 'Chrome 正在下载模型…',
-            available: settings.from === 'auto' ? '模型已就绪；实际源语言将在翻译时检查。' : '模型已就绪。',
+            available: sourceOf(settings) === 'auto' ? '模型已就绪；每段文字的语言在翻译时检测。' : '模型已就绪。',
         };
         return { availability, message: messages[availability] };
     }
 
     private async checkReady(state: AIAvailability, allowDownload: boolean, label: string): Promise<void> {
         if (state === 'unavailable') throw new Error(`${label}不可用，请检查 Chrome 模型和语言支持`);
-        if (state !== 'available' && !allowDownload) throw new Error(`${label}尚未就绪，请在设置中选择源语言并下载、初始化模型`);
+        if (state !== 'available' && !allowDownload) throw new Error(`${label}尚未就绪，请在设置中勾选对应的原文语言并下载模型`);
     }
 
     private monitor() {
@@ -128,7 +136,7 @@ export class ChromeAIService {
         };
     }
 
-    private async getDetector(settings: ChromeAISettings, signal: AbortSignal, download: boolean): Promise<NativeDetector> {
+    private async getDetector(signal: AbortSignal, download: boolean): Promise<NativeDetector> {
         if (this.detector) return this.detector;
         const api = this.apis().LanguageDetector;
         if (!api) throw new Error('Chrome 语言检测 API 不可用');
@@ -137,13 +145,13 @@ export class ChromeAIService {
         return this.detector;
     }
 
-    private async getTranslator(settings: ChromeAISettings, signal: AbortSignal, download: boolean): Promise<NativeTranslator> {
-        const key = this.key(settings);
+    private async getTranslator(source: string, to: string, signal: AbortSignal, download: boolean): Promise<NativeTranslator> {
+        const key = `${source}:${to}`;
         if (this.translator?.key === key) return this.translator.session;
         const api = this.apis().Translator;
         if (!api) throw new Error('Chrome 原生翻译 API 不可用');
-        const languages = { sourceLanguage: chromeLanguage(settings.from), targetLanguage: chromeLanguage(settings.to) };
-        await this.checkReady(await api.availability(languages), download, `翻译模型（${settings.from} → ${settings.to}）`);
+        const languages = { sourceLanguage: chromeLanguage(source), targetLanguage: chromeLanguage(to) };
+        await this.checkReady(await api.availability(languages), download, `翻译模型（${source} → ${to}）`);
         this.translator?.session.destroy();
         this.translator = undefined;
         const session = await api.create({ ...languages, signal, monitor: this.monitor() });
@@ -151,18 +159,18 @@ export class ChromeAIService {
         return session;
     }
 
-    private async getModel(settings: ChromeAISettings, signal: AbortSignal, download: boolean): Promise<NativeLanguageModel> {
-        const key = this.key(settings);
+    private async getModel(source: string, to: string, signal: AbortSignal, download: boolean): Promise<NativeLanguageModel> {
+        const key = `${source}:${to}`;
         if (this.model?.key === key) return this.model.session;
         const api = this.apis().LanguageModel;
         if (!api) throw new Error('Chrome Prompt API 不可用');
-        const languages = promptLanguages(settings.from, settings.to);
-        await this.checkReady(await api.availability(languages), download, `Chrome 大模型（${settings.from} → ${settings.to}）`);
+        const languages = promptLanguages(source, to);
+        await this.checkReady(await api.availability(languages), download, `Chrome 大模型（${source} → ${to}）`);
         this.model?.session.destroy();
         this.model = undefined;
         const session = await api.create({
             ...languages, signal, monitor: this.monitor(),
-            initialPrompts: [{ role: 'system', content: chromeSystemPrompt(settings.to) }],
+            initialPrompts: [{ role: 'system', content: chromeSystemPrompt(to) }],
         });
         this.model = { key, session };
         return session;
@@ -179,10 +187,11 @@ export class ChromeAIService {
         const promise = this.serial(async () => {
             const signal = new AbortController().signal;
             await this.checkReady(await this.availability(settings), true, 'Chrome 模型');
-            if (settings.from === 'auto') await this.getDetector(settings, signal, true);
-            const effective = { ...settings, from: settings.from === 'auto' ? 'en' : settings.from };
-            if (settings.engine === 'prompt') await this.getModel(effective, signal, true);
-            else if (chromeLanguage(effective.from) !== chromeLanguage(effective.to)) await this.getTranslator(effective, signal, true);
+            if (sourceOf(settings) === 'auto') await this.getDetector(signal, true);
+            for (const source of preparedSources(settings)) {
+                if (settings.engine === 'prompt') await this.getModel(source, settings.to, signal, true);
+                else if (chromeLanguage(source) !== chromeLanguage(settings.to)) await this.getTranslator(source, settings.to, signal, true);
+            }
         }).finally(() => { this.preparing = undefined; });
         this.preparing = { key, promise, status: { availability: 'downloading', message: 'Chrome 正在初始化模型…' } };
         return promise;
@@ -204,17 +213,16 @@ export class ChromeAIService {
             signal.addEventListener('abort', abort, { once: true });
             const timer = setTimeout(() => controller.abort(new Error('Chrome 翻译请求超时')), timeout);
             try {
-                let source = settings.from;
+                let source = sourceOf(settings);
                 if (source === 'auto') {
-                    const detector = await this.getDetector(settings, controller.signal, false);
+                    const detector = await this.getDetector(controller.signal, false);
                     const detected = await detector.detect(text, { signal: controller.signal });
                     source = detected[0]?.detectedLanguage;
-                    if (!source || source === 'und') throw new Error('无法检测文本语言，请在设置中选择源语言');
+                    if (!source || source === 'und') throw new Error('无法检测文本语言，请在设置中只勾选一种原文语言');
                 }
                 controller.signal.throwIfAborted();
                 if (chromeLanguage(source) === chromeLanguage(settings.to)) return text;
-                const effective = { ...settings, from: source };
-                const result = await (await this.getTranslator(effective, controller.signal, false)).translate(text, { signal: controller.signal });
+                const result = await (await this.getTranslator(source, settings.to, controller.signal, false)).translate(text, { signal: controller.signal });
                 if (!result.trim()) throw new Error('Chrome 返回空译文');
                 return result;
             } catch (error) {
@@ -252,18 +260,18 @@ export class ChromeAIService {
         try {
             const bySource = new Map<string, PromptRequest[]>();
             for (const item of group) {
-                let source = head.settings.from;
+                let source = sourceOf(head.settings);
                 if (source === 'auto') {
-                    const detector = await this.getDetector(head.settings, controller.signal, false);
+                    const detector = await this.getDetector(controller.signal, false);
                     source = (await detector.detect(item.text, { signal: controller.signal }))[0]?.detectedLanguage;
-                    if (!source || source === 'und') { item.reject(new Error('无法检测文本语言，请在设置中选择源语言')); continue; }
+                    if (!source || source === 'und') { item.reject(new Error('无法检测文本语言，请在设置中只勾选一种原文语言')); continue; }
                 }
                 if (chromeLanguage(source) === chromeLanguage(head.settings.to)) { item.resolve(item.text); continue; }
                 bySource.set(source, [...bySource.get(source) || [], item]);
             }
             for (const [source, items] of bySource) {
                 controller.signal.throwIfAborted();
-                const model = await this.getModel({ ...head.settings, from: source }, controller.signal, false);
+                const model = await this.getModel(source, head.settings.to, controller.signal, false);
                 const results = await translateBatchWithPrompt(model, items.map(item => item.text), controller.signal);
                 items.forEach((item, index) => item.resolve(results[index]));
             }
@@ -292,6 +300,6 @@ export const chromeAI = new ChromeAIService(() => globalThis as ChromeAIAPIs);
 
 export default async function chromeTranslator(message: TranslateRequest): Promise<string> {
     return chromeAI.translate(message.origin, message.chromeAI || {
-        engine: chromeEngineOf(config.service), from: config.from, to: config.to,
+        engine: chromeEngineOf(config.service), sources: config.sourceLanguages, to: config.to,
     }, new AbortController().signal, message.timeout);
 }

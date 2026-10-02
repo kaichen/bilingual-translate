@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import browser from 'webextension-polyfill';
-import { options } from '@/entrypoints/config/option';
 import type { ChromeAISettings as Settings, ChromeAIStatus } from '@/entrypoints/providers/chrome-ai-types';
 import type { BackgroundMessage } from '@/entrypoints/utils/messages';
 
@@ -21,10 +20,7 @@ function FlagLink({ url }: { url: string }) {
     </>;
 }
 
-export default function ChromeAISettings({ settings, onSource }: {
-    settings: Settings;
-    onSource: (language: string) => void;
-}) {
+export default function ChromeAISettings({ settings }: { settings: Settings }) {
     const [status, setStatus] = useState<ChromeAIStatus>();
     const [pollError, setPollError] = useState('');
     const [initError, setInitError] = useState('');
@@ -72,15 +68,6 @@ export default function ChromeAISettings({ settings, onSource }: {
     }
 
     return <div className="bt-native-ai">
-        <div className="bt-setting-row">
-            <label className="bt-setting-label" htmlFor="bt-chrome-source">原文语言</label>
-            <div className="bt-setting-control">
-                <select id="bt-chrome-source" className="bt-select" value={settings.from} onChange={event => onSource(event.currentTarget.value)}>
-                    <option value="auto">自动检测</option>
-                    {options.to.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-            </div>
-        </div>
         <div className="bt-native-ai-status" role="status" aria-live="polite">
             {initError || pollError || status?.message || '正在检查 Chrome 模型…'}
             {status?.availability === 'downloading' && status.progress !== undefined && <progress max={100} value={status.progress} aria-label="模型下载进度" />}
@@ -91,7 +78,7 @@ export default function ChromeAISettings({ settings, onSource }: {
             <button className="bt-button bt-full-width" type="button" onClick={initialize}>下载模型</button>
             <p className="bt-native-ai-note">模型体积较大，仅需下载一次。</p>
         </>}
-        {settings.from === 'auto' && <p className="bt-native-ai-note">自动检测先准备英语到目标语言。其他语言需下载时，请选择对应源语言并初始化。</p>}
+        {!settings.sources.length && settings.engine === 'translator' && <p className="bt-native-ai-note">未勾选原文语言时只准备英语到目标语言。要翻译其他语言，请在上方「原文语言」里勾选后下载对应模型。</p>}
         {settings.engine === 'prompt' && <details className="bt-native-ai-setup" open={status?.availability === 'unavailable'}>
             <summary>Gemma 4 首次设置</summary>
             <ol>

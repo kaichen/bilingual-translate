@@ -29,7 +29,7 @@ describe('Chrome 翻译管线', () => {
         expect(send).toHaveBeenCalledTimes(1);
         expect(send).toHaveBeenCalledWith(expect.objectContaining({
             context: '标题', origin: 'Hello', requestId: expect.any(String), timeout: 500,
-            chromeAI: { engine: 'prompt', from: 'auto', to: 'zh-Hans' },
+            chromeAI: { engine: 'prompt', sources: [], to: 'zh-Hans' },
         }));
     });
 

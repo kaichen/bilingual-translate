@@ -10,7 +10,7 @@ function isConfigObjectValid(obj: any): obj is Config {
         return false;
     }
     // 检查一些关键属性是否存在，以判断配置是否有效
-    return 'on' in obj && 'service' in obj && 'from' in obj && 'to' in obj;
+    return 'on' in obj && 'service' in obj && 'to' in obj;
 }
 
 // 异步加载配置并应用

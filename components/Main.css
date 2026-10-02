@@ -382,6 +382,18 @@
   border-radius: 3px;
 }
 
+.bt-language-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.bt-language-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
 .bt-native-ai {
   padding: 10px 0;
 }

@@ -27,7 +27,7 @@ function cloneConfig(source: Config): Config {
 
 function validateConfig(configData: unknown): configData is Partial<Config> {
   if (typeof configData !== 'object' || configData === null) return false;
-  const requiredFields = ['on', 'service', 'display', 'from', 'to'];
+  const requiredFields = ['on', 'service', 'display', 'to'];
   return requiredFields.every((field) => field in configData);
 }
 
@@ -501,10 +501,26 @@ export default function Main() {
             <SelectControl value={config.to} options={options.to} onChange={(value) => setField('to', value)} />
           </SettingRow>
 
+          <SettingRow label="原文语言" hint="只翻译勾选的语言，可多选；都不勾选则自动检测并翻译所有语言">
+            <div className="bt-language-checks">
+              {options.to.filter((item) => item.value !== config.to).map((item) => (
+                <label key={item.value} className="bt-language-check">
+                  <input
+                    type="checkbox"
+                    checked={config.sourceLanguages.includes(item.value)}
+                    onChange={(event) => setField('sourceLanguages', event.currentTarget.checked
+                      ? [...config.sourceLanguages, item.value]
+                      : config.sourceLanguages.filter((language) => language !== item.value))}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </div>
+          </SettingRow>
+
           {computed.showNativeAI && <ChromeAISettings
-            key={`${config.service}:${config.from}:${config.to}`}
-            settings={{ engine: chromeEngineOf(config.service), from: config.from, to: config.to }}
-            onSource={value => setField('from', value)}
+            key={`${config.service}:${config.sourceLanguages.join()}:${config.to}`}
+            settings={{ engine: chromeEngineOf(config.service), sources: config.sourceLanguages, to: config.to }}
           />}
 
           <SettingRow label="鼠标悬浮快捷键" hint="按住指定快捷键并悬停在文本上进行翻译">

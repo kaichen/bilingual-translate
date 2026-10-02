@@ -33,13 +33,13 @@ describe("buildKey — 纯缓存 key 拼接", () => {
 
 
 describe('Chrome 引擎缓存隔离', () => {
-  const native = { ...base, service: services.chromeTranslator, from: 'auto' };
+  const native = { ...base, service: services.chromeTranslator, sourceLanguages: [] as string[] };
   it('原生翻译、大模型和旧缓存互不串用', () => {
     const translator = buildKey('hello', native);
     const prompt = buildKey('hello', { ...native, service: services.chromeGemma });
     expect(translator).not.toBe(prompt);
     expect(prompt).toContain(CHROME_PROMPT_VERSION);
     expect(translator).not.toBe(`${CACHE_PREFIX}_1_chromeTranslator__zh-Hans_hello`);
-    expect(buildKey('hello', { ...native, from: 'ja' })).not.toBe(translator);
+    expect(buildKey('hello', { ...native, sourceLanguages: ['ja'] })).not.toBe(translator);
   });
 });

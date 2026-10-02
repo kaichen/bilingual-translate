@@ -665,7 +665,7 @@ export function handleSingleTranslation(node: any, slide: boolean) {
 
 
 function bilingualTranslate(node: any, nodeOuterHTML: any) {
-    if (shouldSkipTranslation(node.textContent, config.to)) return;
+    if (shouldSkipTranslation(node.textContent, config.to, config.sourceLanguages)) return;
 
     let origin = node.textContent;
     let spinner = insertLoadingSpinner(node);
@@ -686,7 +686,7 @@ function bilingualTranslate(node: any, nodeOuterHTML: any) {
 
 function handleBilingualTargetTranslation(target: TranslationTarget) {
     const origin = getTranslationTargetSourceText(target);
-    if (shouldSkipTranslation(origin, config.to)) return;
+    if (shouldSkipTranslation(origin, config.to, config.sourceLanguages)) return;
 
     const cached = cache.localGet(origin);
     if (cached) {
@@ -705,7 +705,7 @@ function handleBilingualTargetTranslation(target: TranslationTarget) {
 
 
 export function singleTranslate(node: any) {
-    if (shouldSkipTranslation(node.textContent, config.to)) return;
+    if (shouldSkipTranslation(node.textContent, config.to, config.sourceLanguages)) return;
 
     let origin = servicesType.isAI(config.service) || (servicesType.isNativeAI(config.service) && chromeEngineOf(config.service) === 'prompt')
         ? LLMStandardHTML(node) : node.innerHTML;

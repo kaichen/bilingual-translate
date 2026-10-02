@@ -53,7 +53,7 @@ export async function translateText(origin: string, context: string = document.t
   } = options;
 
   // 如果目标语言与当前文本语言相同，直接返回原文
-  if (shouldSkipTranslation(origin, config.to)) {
+  if (shouldSkipTranslation(origin, config.to, config.sourceLanguages)) {
     return origin;
   }
 
@@ -74,7 +74,7 @@ export async function translateText(origin: string, context: string = document.t
   storage.setItem('local:config', JSON.stringify(config));
 
   const nativeSettings = servicesType.isNativeAI(config.service) ? {
-    engine: chromeEngineOf(config.service), from: config.from, to: config.to,
+    engine: chromeEngineOf(config.service), sources: [...config.sourceLanguages], to: config.to,
   } : undefined;
 
   // 使用队列处理翻译请求
@@ -118,7 +118,7 @@ export async function translateText(origin: string, context: string = document.t
 
         // 缓存翻译结果
         if (useCache && (!nativeSettings || (servicesType.isNativeAI(config.service)
-          && chromeEngineOf(config.service) === nativeSettings.engine && config.from === nativeSettings.from && config.to === nativeSettings.to))) {
+          && chromeEngineOf(config.service) === nativeSettings.engine && config.sourceLanguages.join() === nativeSettings.sources.join() && config.to === nativeSettings.to))) {
           cache.localSet(origin, result);
         }
 

@@ -36,9 +36,20 @@ export function detectlang(origin: string): string {
     }
 }
 
-// 若文本语言已是目标语言，则跳过翻译（去空白后用 detectlang 判定）。纯函数，可单测。
-export function shouldSkipTranslation(text: string, targetLang: string): boolean {
-    return detectlang(text.replace(/[\s　]/g, '')) === targetLang;
+// 短文本的语言检测不可靠，低于这个长度不按原文语言列表过滤。
+const SOURCE_FILTER_MIN_LENGTH = 20;
+
+// 文本是否属于「需要翻译的原文语言」。列表为空表示全部翻译；检测不出语言时也放行。
+export function isSourceLanguageAllowed(text: string, sourceLanguages: string[]): boolean {
+    const trimmed = text.trim();
+    if (!sourceLanguages.length || trimmed.length < SOURCE_FILTER_MIN_LENGTH) return true;
+    const detected = detectlang(trimmed);
+    return detected === 'und' || sourceLanguages.includes(detected);
+}
+
+// 若文本语言已是目标语言（去空白后用 detectlang 判定），或不在原文语言列表内，则跳过翻译。纯函数，可单测。
+export function shouldSkipTranslation(text: string, targetLang: string, sourceLanguages: string[] = []): boolean {
+    return detectlang(text.replace(/[\s　]/g, '')) === targetLang || !isSourceLanguageAllowed(text, sourceLanguages);
 }
 
 // 获取触摸点的中心位置

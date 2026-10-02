@@ -45,6 +45,13 @@ describe("Config — 载入保留服务的配置", () => {
         expect(new Config({ ...stored, service }).service).toBe(service);
     });
 
+    it('旧配置的单个源语言迁移为原文语言列表', () => {
+        expect(new Config(stored).sourceLanguages).toEqual([]);
+        expect(new Config({ ...stored, from: 'ja' } as never).sourceLanguages).toEqual(['ja']);
+        expect(new Config({ ...stored, from: 'ja', sourceLanguages: ['en', 'fr'] } as never).sourceLanguages).toEqual(['en', 'fr']);
+        expect(JSON.stringify(new Config({ ...stored, from: 'ja' } as never))).not.toContain('"from"');
+    });
+
     it('旧配置的 Chrome 引擎字段迁移为独立服务', () => {
         const chrome = { ...stored, service: services.chromeTranslator };
         expect(new Config({ ...chrome, chromeTranslationEngine: 'prompt' } as never).service).toBe(services.chromeGemma);

@@ -12,7 +12,7 @@ export class Config {
     youtubeSubtitle: boolean; // 是否启用视频字幕翻译
     youtubeDubbing: boolean; // 是否启用字幕配音（TTS 朗读字幕并静音原声）
     youtubeDubbingSource: string; // 配音朗读内容：translation=译文，origin=原文
-    from: string;
+    sourceLanguages: string[]; // 只翻译这些原文语言；空数组表示自动检测、全部翻译
     to: string;
     hotkey: string;
     style: number;
@@ -41,7 +41,7 @@ export class Config {
         this.youtubeSubtitle = false;
         this.youtubeDubbing = false;
         this.youtubeDubbingSource = 'translation';
-        this.from = defaultOption.from;
+        this.sourceLanguages = [];
         this.to = defaultOption.to;
         this.style = defaultOption.style;
         this.display = defaultOption.display;
@@ -70,6 +70,10 @@ export class Config {
         for (const key of ['token', 'model', 'customModel', 'proxy', 'system_role', 'user_role'] as const) {
             this[key] = Object.fromEntries(Object.entries(this[key]).filter(([service]) => providerOf(service)));
         }
+        // 旧配置的单个源语言迁移为原文语言列表。
+        const legacyFrom = (values as { from?: string }).from;
+        if (!('sourceLanguages' in values) && legacyFrom && legacyFrom !== 'auto') this.sourceLanguages = [legacyFrom];
+        if (!Array.isArray(this.sourceLanguages)) this.sourceLanguages = [];
         // 旧配置用引擎字段区分两种 Chrome 本地翻译，现在各是一个服务。
         if (this.service === services.chromeTranslator && (values as { chromeTranslationEngine?: string }).chromeTranslationEngine === 'prompt') {
             this.service = services.chromeGemma;

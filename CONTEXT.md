@@ -57,6 +57,10 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 > 与 Provider 注册表同构：站点适配从「一域名一命令式函数 + 一份并行 selector 数据」收敛为「一条数据记录 + 必要时的逃生舱钩子」。`site-rules/` 不 import `config`，可在 vitest 下直接测（见 `tests/site-rules.test.ts` 黄金快照）。
 
+## 原文语言（sourceLanguages）
+
+全局配置 `sourceLanguages: string[]` 表示「只翻译这些语言」，空数组即自动检测、全部翻译。过滤在页面侧完成：`utils/common.ts` 的 `shouldSkipTranslation(text, to, sourceLanguages)` 用 franc 检测，不在列表内就跳过；少于 20 个字符或检测不出语言的文本放行。谷歌、微软一律让服务自动检测。Chrome 本地服务按列表逐个准备语言对，只勾选一种时直接按它翻译，否则逐段用 `LanguageDetector` 检测。旧配置的单值 `from` 在 `Config` 构造时迁移。
+
 ## Chrome 内置 AI
 
 `providers/translate/chrome-builtin-ai.ts` 直接在扩展 Service Worker 调用当前 `Translator`、`LanguageDetector`、`LanguageModel`。`chromeTranslator`（Translator API）和 `chromeGemma`（Prompt API）是两个独立服务，共用这一套实现；引擎由 `registry.ts` 的 `chromeEngineOf(service)` 从服务名派生，不再有单独的引擎配置项。`nativeAI` 能力用于设置展示与请求路由。

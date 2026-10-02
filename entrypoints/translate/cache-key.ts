@@ -11,14 +11,14 @@ export interface CacheKeyParams {
     customModel: Record<string, string>;
     to: string;
     style: number;
-    from?: string;
+    sourceLanguages?: string[];
 }
 
 // 构建翻译缓存 key：前缀_样式_服务_模型_目标语言_消息（纯函数，不读 config 单例 → 可单测）
 export function buildKey(message: string, c: CacheKeyParams): string {
     if (servicesType.isNativeAI(c.service)) {
         const engine = chromeEngineOf(c.service);
-        return [CACHE_PREFIX, c.style, c.service, engine === 'prompt' ? CHROME_PROMPT_VERSION : engine, c.from || 'auto', c.to, message].join('_');
+        return [CACHE_PREFIX, c.style, c.service, engine === 'prompt' ? CHROME_PROMPT_VERSION : engine, c.sourceLanguages?.length === 1 ? c.sourceLanguages[0] : 'auto', c.to, message].join('_');
     }
     const selectedModel = c.model[c.service] === customModelString ? c.customModel[c.service] : c.model[c.service];
     return [CACHE_PREFIX, c.style, c.service, selectedModel, c.to, message].join('_');

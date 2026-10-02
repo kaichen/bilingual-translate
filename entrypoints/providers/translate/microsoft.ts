@@ -24,8 +24,8 @@ export async function microsoftTranslate(text: string, from: string, to: string)
 }
 
 async function microsoft(message: any) {
-    let fromLang = config.from === 'auto' ? '' : config.from;
-    return microsoftTranslate(message.origin, fromLang, config.to);
+    // 原文语言由微软自动检测；是否翻译由页面按原文语言列表决定
+    return microsoftTranslate(message.origin, '', config.to);
 }
 
 async function refreshToken(token: string) {

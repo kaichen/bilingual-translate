@@ -3,7 +3,7 @@ export type AIAvailability = 'unavailable' | 'downloadable' | 'downloading' | 'a
 export type ChromeTranslationEngine = 'translator' | 'prompt';
 export interface ChromeAISettings {
     engine: ChromeTranslationEngine;
-    from: string;
+    sources: string[]; // 需要翻译的原文语言；空数组表示自动检测、全部翻译
     to: string;
 }
 export interface ChromeAIStatus {

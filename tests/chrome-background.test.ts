@@ -21,7 +21,7 @@ async function setup() {
     await import('../entrypoints/background');
 }
 const sender = (id = 1, documentId = 'document') => ({ tab: { id }, frameId: 0, documentId } as chrome.runtime.MessageSender);
-const request: TranslateRequest = { context: '标题', origin: 'Hello', requestId: 'req', chromeAI: { engine: 'prompt', from: 'en', to: 'zh-Hans' } };
+const request: TranslateRequest = { context: '标题', origin: 'Hello', requestId: 'req', chromeAI: { engine: 'prompt', sources: ['en'], to: 'zh-Hans' } };
 afterEach(() => { vi.unstubAllGlobals(); vi.resetModules(); vi.clearAllMocks(); });
 
 describe('Chrome 后台消息', () => {

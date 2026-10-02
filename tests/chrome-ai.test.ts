@@ -4,8 +4,8 @@ vi.mock('@/entrypoints/config/config', () => ({ config: {} }));
 import { ChromeAIService } from '../entrypoints/providers/translate/chrome-builtin-ai';
 import { promptChunks } from '../entrypoints/providers/llm/chrome-prompt';
 
-const translatorSettings: ChromeAISettings = { engine: 'translator', from: 'auto', to: 'zh-Hans' };
-const promptSettings: ChromeAISettings = { engine: 'prompt', from: 'auto', to: 'zh-Hans' };
+const translatorSettings: ChromeAISettings = { engine: 'translator', sources: [], to: 'zh-Hans' };
+const promptSettings: ChromeAISettings = { engine: 'prompt', sources: [], to: 'zh-Hans' };
 let service: ChromeAIService;
 let apis: ChromeAIAPIs;
 let clones: NativeLanguageModel[];
@@ -66,7 +66,7 @@ describe('Chrome 原生 AI', () => {
     });
 
     it('下载必须显式初始化，合并同时初始化并报告进度', async () => {
-        const settings = { ...translatorSettings, from: 'en' };
+        const settings = { ...translatorSettings, sources: ['en'] };
         let ready = false;
         let complete!: () => void;
         apis.Translator!.availability = vi.fn(async () => ready ? 'available' : 'downloadable');
@@ -86,6 +86,22 @@ describe('Chrome 原生 AI', () => {
         await first;
         expect((await service.status(settings)).availability).toBe('available');
         expect(apis.Translator!.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('多种原文语言逐个准备语言对，翻译时按检测结果选用', async () => {
+        const settings = { ...translatorSettings, sources: ['en', 'ja'] };
+        await service.initialize(settings);
+        expect(vi.mocked(apis.Translator!.create).mock.calls.map(([options]) => options.sourceLanguage)).toEqual(['en', 'ja']);
+        expect(apis.LanguageDetector!.create).toHaveBeenCalledTimes(1);
+        detected = 'en';
+        await service.translate('Hello', settings, signal());
+        expect(apis.Translator!.create).toHaveBeenLastCalledWith(expect.objectContaining({ sourceLanguage: 'en' }));
+    });
+
+    it('只勾选一种原文语言时不做语言检测', async () => {
+        await service.translate('こんにちは', { ...translatorSettings, sources: ['ja'] }, signal());
+        expect(apis.LanguageDetector!.create).not.toHaveBeenCalled();
+        expect(apis.Translator!.create).toHaveBeenCalledWith(expect.objectContaining({ sourceLanguage: 'ja' }));
     });
 
     it('汉字混合日语使用检测结果；不把检测失败的文本当成英语', async () => {
@@ -113,7 +129,7 @@ describe('Chrome 原生 AI', () => {
     });
 
     it('排队中的大模型请求合并为一次推理，短文本不询问用量', async () => {
-        const settings = { ...promptSettings, from: 'en' };
+        const settings = { ...promptSettings, sources: ['en'] };
         const results = await Promise.all(['One', ' Two\n', 'Three'].map(text => service.translate(text, settings, signal())));
         expect(results).toEqual(['One', ' Two\n', 'Three']);
         expect(clones).toHaveLength(1);
@@ -122,7 +138,7 @@ describe('Chrome 原生 AI', () => {
     });
 
     it('合并译文缺少标记时逐段重译；取消其中一段不影响其余', async () => {
-        const settings = { ...promptSettings, from: 'en' };
+        const settings = { ...promptSettings, sources: ['en'] };
         base.clone = vi.fn(async () => {
             const session: NativeLanguageModel = {
                 ...base, destroy: vi.fn(),
@@ -153,7 +169,7 @@ describe('Chrome 原生 AI', () => {
             ...small, clone: async () => ({ ...small, prompt: async text => text, destroy: vi.fn() }),
         };
         apis.LanguageModel!.create = vi.fn(async () => identity);
-        expect(await service.translate(text, { ...promptSettings, from: 'en' }, signal())).toBe(text);
+        expect(await service.translate(text, { ...promptSettings, sources: ['en'] }, signal())).toBe(text);
     });
 
     it('跨标签页的原生任务串行；取消等待中的任务不创建会话', async () => {

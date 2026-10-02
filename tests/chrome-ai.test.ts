@@ -55,9 +55,10 @@ describe('Chrome 原生 AI', () => {
 
     it('缺少 API 或所选语言不可用时直接报错，不调用 create', async () => {
         apis.LanguageModel = undefined;
-        expect((await service.status(promptSettings)).availability).toBe('unavailable');
+        expect(await service.status(promptSettings)).toMatchObject({ availability: 'unavailable', message: expect.stringContaining('开启 Gemma 4') });
         await expect(service.translate('Hello', promptSettings, signal())).rejects.toThrow('Prompt API 不可用');
         apis.Translator!.availability = vi.fn(async () => 'unavailable' as const);
+        expect(await service.status(translatorSettings)).toMatchObject({ availability: 'unavailable', message: expect.stringContaining('语言组合') });
         await expect(service.translate('Hello', translatorSettings, signal())).rejects.toThrow('不可用');
         expect(apis.Translator!.create).not.toHaveBeenCalled();
     });

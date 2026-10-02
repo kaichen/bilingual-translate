@@ -4,6 +4,23 @@ import { options } from '@/entrypoints/config/option';
 import type { ChromeAISettings as Settings, ChromeAIStatus, ChromeTranslationEngine } from '@/entrypoints/providers/chrome-ai-types';
 import type { BackgroundMessage } from '@/entrypoints/utils/messages';
 
+// chrome:// 地址不能用普通链接跳转，交给 tabs.create；被拒绝时退回复制地址。
+function FlagLink({ url }: { url: string }) {
+    const [copied, setCopied] = useState(false);
+    async function open() {
+        try {
+            await browser.tabs.create({ url });
+        } catch {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+        }
+    }
+    return <>
+        <code>{url}</code>
+        <button className="bt-native-ai-flag" type="button" onClick={open}>{copied ? '已复制，请粘贴到地址栏' : '打开'}</button>
+    </>;
+}
+
 export default function ChromeAISettings({ settings, onEngine, onSource }: {
     settings: Settings;
     onEngine: (engine: ChromeTranslationEngine) => void;
@@ -84,9 +101,14 @@ export default function ChromeAISettings({ settings, onEngine, onSource }: {
             <p className="bt-native-ai-note">模型体积较大，仅需下载一次。</p>
         </>}
         {settings.from === 'auto' && <p className="bt-native-ai-note">自动检测先准备英语到目标语言。其他语言需下载时，请选择对应源语言并初始化。</p>}
-        {settings.engine === 'prompt' && <details className="bt-native-ai-setup">
+        {settings.engine === 'prompt' && <details className="bt-native-ai-setup" open={status?.availability === 'unavailable'}>
             <summary>Gemma 4 首次设置</summary>
-            <p>使用 Chrome 154 或更高版本，在 <code>chrome://flags/#gemma4-for-built-in-ai</code> 启用 Gemma 4；在 <code>chrome://flags/#prompt-api</code> 选择 Enabled Multilingual 以支持中文等语言，然后重启 Chrome。</p>
+            <ol>
+                <li>使用 Chrome 154 或更高版本。</li>
+                <li>启用 Gemma 4：<FlagLink url="chrome://flags/#gemma4-for-built-in-ai" /></li>
+                <li>选择 Enabled Multilingual 以支持中文等语言：<FlagLink url="chrome://flags/#prompt-api" /></li>
+                <li>重启 Chrome。</li>
+            </ol>
             <p>模型版本由 Chrome 管理。插件按实际语言检查可用性，首次下载后可离线翻译，无需令牌。</p>
         </details>}
     </div>;

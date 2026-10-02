@@ -402,3 +402,14 @@
 .bt-native-ai-note { opacity: 0.75; }
 .bt-native-ai-setup { margin-top: 10px; }
 .bt-native-ai-setup summary { cursor: pointer; }
+.bt-native-ai-setup ol { margin: 6px 0; padding-left: 18px; }
+.bt-native-ai-flag {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { detectTextLanguage, resolvePageLanguage, shouldSkipTranslation } from "../entrypoints/utils/common";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { collectPageSample, detectTextLanguage, getPageLanguage, resolvePageLanguage, shouldSkipTranslation } from "../entrypoints/utils/common";
 
 const EN = "This is a reasonably long English sentence used for language detection.";
 const ZH = "这是一段用于语言检测测试的足够长的中文句子内容示例。";
@@ -82,6 +82,17 @@ describe("shouldSkipTranslation — 翻译前的语言闸", () => {
     expect(shouldSkipTranslation("Subscribe to our newsletter now", "zh-Hans", ["en"], page("en"))).toBe(false);
   });
 
+  it("只在需要时读取页面语言", () => {
+    const pageLanguage = vi.fn(() => "en");
+    expect(shouldSkipTranslation("ログイン", "zh-Hans", [], pageLanguage)).toBe(false);
+    expect(shouldSkipTranslation("안녕하세요", "ko", [], pageLanguage)).toBe(true);
+    expect(shouldSkipTranslation(EN, "en", [], pageLanguage)).toBe(true);
+    expect(pageLanguage).not.toHaveBeenCalled();
+    expect(shouldSkipTranslation("東京都渋谷区", "zh-Hans", [], pageLanguage)).toBe(true);
+    expect(shouldSkipTranslation("Sign in", "en", [], pageLanguage)).toBe(true);
+    expect(pageLanguage).toHaveBeenCalledTimes(2);
+  });
+
   it("判断不出语言时放行", () => {
     expect(shouldSkipTranslation("Sign in", "zh-Hans", ["ja"], page())).toBe(false);
   });
@@ -107,5 +118,44 @@ describe("resolvePageLanguage — 页面语言", () => {
     expect(resolvePageLanguage("短", "ja-JP")).toBe("ja");
     expect(resolvePageLanguage("", "zh_CN")).toBe("zh-Hans");
     expect(resolvePageLanguage("", "")).toBeUndefined();
+  });
+});
+
+describe("collectPageSample — 页面语言采样", () => {
+  it("按顺序收集文字，跳过脚本、样式和本扩展注入的译文", () => {
+    document.body.innerHTML = `
+      <p>Hello <b>world</b></p>
+      <script>var zh = "中文";</script><style>.a{}</style><noscript>noscript</noscript>
+      <p class="bilingual-translate-bilingual">Original<span class="bilingual-translate-bilingual-content"><span class="bilingual-translate-bilingual-text">译文</span></span></p>
+      <p data-bt-translated="true">单语译文</p>
+      <span class="bilingual-translate-loading">加载</span>
+      <p hidden>hidden</p>
+      <p>end</p>`;
+    expect(collectPageSample(document.body)).toBe("Hello world Original end");
+  });
+
+  it("够长就停", () => {
+    document.body.innerHTML = `<p>${"a".repeat(30)}</p><p>${"b".repeat(30)}</p><p>${"c".repeat(30)}</p>`;
+    expect(collectPageSample(document.body, 40)).toBe("a".repeat(30) + "b".repeat(10));
+  });
+});
+
+describe("getPageLanguage — 缓存会过期", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("样本不足时 2 秒后重算，样本足够时 10 秒后重算", () => {
+    vi.useFakeTimers();
+    document.documentElement.lang = "fr";
+    document.body.innerHTML = "<p>短</p>";
+    expect(getPageLanguage()).toBe("fr");
+    document.body.innerHTML = `<main>${ZH.repeat(10)}</main>`;
+    expect(getPageLanguage()).toBe("fr");
+    vi.advanceTimersByTime(2_000);
+    expect(getPageLanguage()).toBe("zh-Hans");
+    document.body.innerHTML = `<main>${EN.repeat(4)}</main>`;
+    vi.advanceTimersByTime(9_000);
+    expect(getPageLanguage()).toBe("zh-Hans");
+    vi.advanceTimersByTime(1_000);
+    expect(getPageLanguage()).toBe("en");
   });
 });

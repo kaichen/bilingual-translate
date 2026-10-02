@@ -98,10 +98,19 @@ describe('Chrome 原生 AI', () => {
         expect(apis.Translator!.create).toHaveBeenLastCalledWith(expect.objectContaining({ sourceLanguage: 'en' }));
     });
 
-    it('只勾选一种原文语言时不做语言检测', async () => {
-        await service.translate('こんにちは', { ...translatorSettings, sources: ['ja'] }, signal());
-        expect(apis.LanguageDetector!.create).not.toHaveBeenCalled();
+    it('检测结果不在原文语言列表内时返回原文；检测不出且只勾选一种时按它翻译', async () => {
+        const settings = { ...translatorSettings, sources: ['ja'] };
+        detected = 'en';
+        await expect(service.translate('Sign in', settings, signal())).resolves.toBe('Sign in');
+        await expect(service.translate('Sign in', { ...promptSettings, sources: ['ja', 'fr'] }, signal())).resolves.toBe('Sign in');
+        expect(apis.Translator!.create).not.toHaveBeenCalled();
+        expect(apis.LanguageModel!.create).not.toHaveBeenCalled();
+        detected = 'und';
+        await expect(service.translate('こん', settings, signal())).resolves.toBe('你好');
         expect(apis.Translator!.create).toHaveBeenCalledWith(expect.objectContaining({ sourceLanguage: 'ja' }));
+        detected = 'zh';
+        await expect(service.translate('你好', { ...translatorSettings, sources: ['zh-Hans'], to: 'en' }, signal())).resolves.toBe('你好');
+        expect(apis.Translator!.create).toHaveBeenLastCalledWith(expect.objectContaining({ sourceLanguage: 'zh', targetLanguage: 'en' }));
     });
 
     it('汉字混合日语使用检测结果；不把检测失败的文本当成英语', async () => {

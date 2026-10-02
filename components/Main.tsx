@@ -498,7 +498,11 @@ export default function Main() {
           </SettingRow>
 
           <SettingRow label="目标语言">
-            <SelectControl value={config.to} options={options.to} onChange={(value) => setField('to', value)} />
+            <SelectControl value={config.to} options={options.to} onChange={(value) => updateConfig((draft) => {
+              draft.to = value;
+              // 目标语言不能同时是要翻译的原文语言
+              draft.sourceLanguages = draft.sourceLanguages.filter((language) => language !== value);
+            })} />
           </SettingRow>
 
           <SettingRow label="原文语言" hint="只翻译勾选的语言，可多选；都不勾选则自动检测并翻译所有语言">

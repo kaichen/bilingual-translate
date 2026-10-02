@@ -59,7 +59,7 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 ## 原文语言（sourceLanguages）
 
-全局配置 `sourceLanguages: string[]` 表示「只翻译这些语言」，空数组即自动检测、全部翻译。旧配置的单值 `from` 在 `Config` 构造时迁移。所有服务的翻译缓存 key（`translate/cache-key.ts` 的 `buildKey`）都含排序后的原文语言列表（空列表为 `auto`），改了列表不会读到按旧列表缓存的译文。
+全局配置 `sourceLanguages: string[]` 表示「只翻译这些语言」，空数组即自动检测、全部翻译。旧配置的单值 `from` 在 `Config` 构造时迁移；构造时还会去重，并只保留 `options.to` 里有、且不等于当前目标语言的值（设置面板隐藏了目标语言的勾选框，留着它用户清不掉，会导致什么都不翻译；导入的配置同理）。所有服务的翻译缓存 key（`translate/cache-key.ts` 的 `buildKey`）都含排序后的原文语言列表（空列表为 `auto`），改了列表不会读到按旧列表缓存的译文。
 
 ## 语言检测
 

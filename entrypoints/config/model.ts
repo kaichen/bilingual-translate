@@ -1,4 +1,4 @@
-import { defaultOption, services } from "./option";
+import { defaultOption, options, services } from "./option";
 import { providerOf } from "@/entrypoints/providers/registry";
 
 interface IMapping {
@@ -73,7 +73,10 @@ export class Config {
         // 旧配置的单个源语言迁移为原文语言列表。
         const legacyFrom = (values as { from?: string }).from;
         if (!('sourceLanguages' in values) && legacyFrom && legacyFrom !== 'auto') this.sourceLanguages = [legacyFrom];
-        if (!Array.isArray(this.sourceLanguages)) this.sourceLanguages = [];
+        // 只保留选项里有、且不是目标语言的原文语言：界面隐藏了目标语言的勾选框，留着它用户清不掉，会什么都不翻译。
+        const validSources = new Set(options.to.map(option => option.value).filter(language => language !== this.to));
+        this.sourceLanguages = Array.isArray(this.sourceLanguages)
+            ? [...new Set(this.sourceLanguages)].filter(language => validSources.has(language)) : [];
         // 旧配置用引擎字段区分两种 Chrome 本地翻译，现在各是一个服务。
         if (this.service === services.chromeTranslator && (values as { chromeTranslationEngine?: string }).chromeTranslationEngine === 'prompt') {
             this.service = services.chromeGemma;

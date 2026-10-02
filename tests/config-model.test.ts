@@ -47,9 +47,18 @@ describe("Config — 载入保留服务的配置", () => {
 
     it('旧配置的单个源语言迁移为原文语言列表', () => {
         expect(new Config(stored).sourceLanguages).toEqual([]);
-        expect(new Config({ ...stored, from: 'ja' } as never).sourceLanguages).toEqual(['ja']);
-        expect(new Config({ ...stored, from: 'ja', sourceLanguages: ['en', 'fr'] } as never).sourceLanguages).toEqual(['en', 'fr']);
+        expect(new Config({ ...stored, from: 'en' } as never).sourceLanguages).toEqual(['en']);
+        expect(new Config({ ...stored, from: 'en', sourceLanguages: ['ko', 'fr'] } as never).sourceLanguages).toEqual(['ko', 'fr']);
         expect(JSON.stringify(new Config({ ...stored, from: 'ja' } as never))).not.toContain('"from"');
+    });
+
+    it('原文语言只保留选项内、非目标语言的值并去重', () => {
+        // stored.to === 'ja'
+        expect(new Config({ ...stored, from: 'ja' } as never).sourceLanguages).toEqual([]);
+        expect(new Config({ ...stored, from: 'de' } as never).sourceLanguages).toEqual([]);
+        expect(new Config({ ...stored, sourceLanguages: 'en' } as never).sourceLanguages).toEqual([]);
+        expect(new Config({ ...stored, sourceLanguages: ['en', 'ja', 'de', 'en', 'fr'] }).sourceLanguages).toEqual(['en', 'fr']);
+        expect(new Config({ sourceLanguages: ['en'], to: 'en' }).sourceLanguages).toEqual([]);
     });
 
     it('旧配置的 Chrome 引擎字段迁移为独立服务', () => {

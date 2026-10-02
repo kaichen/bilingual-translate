@@ -10,7 +10,9 @@ export default function ChromeAISettings({ settings, onEngine, onSource }: {
     onSource: (language: string) => void;
 }) {
     const [status, setStatus] = useState<ChromeAIStatus>();
-    const [error, setError] = useState('');
+    const [pollError, setPollError] = useState('');
+    const [initError, setInitError] = useState('');
+    const lastAvailability = useRef<string>();
     const [initializing, setInitializing] = useState(false);
     const mounted = useRef(true);
 
@@ -18,9 +20,14 @@ export default function ChromeAISettings({ settings, onEngine, onSource }: {
         try {
             const response = await browser.runtime.sendMessage({ type: 'getChromeAIStatus', settings } satisfies BackgroundMessage) as ChromeAIStatus | { success: false; error: string };
             if (!response || !('availability' in response)) throw new Error((response && 'error' in response ? response.error : '无法读取 Chrome 模型状态'));
-            if (mounted.current) setStatus(response as ChromeAIStatus);
+            if (!mounted.current) return;
+            setStatus(response as ChromeAIStatus);
+            setPollError('');
+            // 可用状态变化后，旧的初始化错误不再有意义
+            if (lastAvailability.current !== undefined && lastAvailability.current !== response.availability) setInitError('');
+            lastAvailability.current = response.availability;
         } catch (err) {
-            if (mounted.current) setError(err instanceof Error ? err.message : String(err));
+            if (mounted.current) setPollError(err instanceof Error ? err.message : String(err));
         }
     }
 
@@ -36,13 +43,13 @@ export default function ChromeAISettings({ settings, onEngine, onSource }: {
     }, []);
 
     async function initialize() {
-        setError('');
+        setInitError('');
         setInitializing(true);
         try {
             const response = await browser.runtime.sendMessage({ type: 'initializeChromeAI', settings } satisfies BackgroundMessage) as { success: boolean; error?: string };
             if (!response?.success) throw new Error(response?.error || 'Chrome 模型初始化失败');
         } catch (err) {
-            if (mounted.current) setError(err instanceof Error ? err.message : String(err));
+            if (mounted.current) setInitError(err instanceof Error ? err.message : String(err));
         } finally {
             if (mounted.current) { setInitializing(false); void refresh(); }
         }
@@ -67,7 +74,7 @@ export default function ChromeAISettings({ settings, onEngine, onSource }: {
             </div>
         </div>
         <div className="bt-native-ai-status" role="status" aria-live="polite">
-            {error || status?.message || '正在检查 Chrome 模型…'}
+            {initError || pollError || status?.message || '正在检查 Chrome 模型…'}
             {status?.availability === 'downloading' && status.progress !== undefined && <progress max={100} value={status.progress} aria-label="模型下载进度" />}
             {status?.availability === 'downloading' && status.progress !== undefined && <span>{status.progress}%</span>}
         </div>

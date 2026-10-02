@@ -28,6 +28,10 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 `Config` 构造函数统一加载持久化与导入配置，忽略已移除服务的字段和映射；已移除的服务选择回到默认服务。
 
+## 视频字幕服务
+
+YouTube / Substack 字幕只用机器翻译：`registry.ts` 的 `subtitleServiceOf(service)` 在当前服务是微软、谷歌、Chrome 本地翻译时原样返回，其余（自定义接口、DeepSeek、OpenRouter，以及实为本地大模型的 Chrome Gemma）改用微软。字幕以 `translateText(..., { service })` 指定服务：请求带上 `service`，后台按 `message.service ?? config.service` 分发（未注册的服务报错），缓存键与是否走 Chrome 原生请求也按实际使用的服务决定；页面队列的并发上限仍按 `config.service`。不传 `service` 的普通翻译行为不变。
+
 ## 分发接线（Dispatch）
 
 `name → 翻译函数` 的绑定，住在 `providers/service.ts`。它 import 各 service 实现（进而 import `config`，带 storage 副作用），与纯数据的注册表**刻意分离**：注册表可测，dispatch 不污染其可测性。

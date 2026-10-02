@@ -68,6 +68,12 @@ export const servicesType = {
     isUseModel: (service: string) => servicesType.useModel.has(service),
 };
 
+// 视频字幕只用机器翻译：当前服务是真正的机器翻译（微软、谷歌、Chrome 本地翻译）就用它，
+// 否则（大模型服务，以及实为本地大模型的 Chrome Gemma）改用不需要令牌的微软翻译。
+export const subtitleServiceOf = (service: string): string =>
+    servicesType.isMachine(service) && !(servicesType.isNativeAI(service) && chromeEngineOf(service) === "prompt")
+        ? service : services.microsoft;
+
 export const urls: Record<string, string> = Object.fromEntries(
     PROVIDERS.filter((p) => p.url).map((p) => [p.name, p.url!]),
 );

@@ -1,8 +1,11 @@
 import { config } from "@/entrypoints/config/config";
 import { buildKey, CACHE_PREFIX } from "./cache-key";
 
-// key 拼接逻辑（纯）在 cache-key.ts；这里把 config 单例的相关字段喂进去
-const keyOf = (message: string) => buildKey(message, config);
+// key 拼接逻辑（纯）在 cache-key.ts；这里把 config 单例的相关字段喂进去。
+// service 缺省为当前配置的服务；指定服务翻译（如视频字幕）时按实际使用的服务生成键。
+const keyOf = (message: string, service = config.service) => service === config.service ? buildKey(message, config) : buildKey(message, {
+    service, model: config.model, customModel: config.customModel, to: config.to, style: config.style, sourceLanguages: config.sourceLanguages,
+});
 
 export const cache = {
     // 存入缓存并设置过期时间
@@ -17,11 +20,11 @@ export const cache = {
     },
 
     // local 系列为特化的缓存方法，用于操作翻译缓存
-    localSet(key: string, value: string) {
+    localSet(key: string, value: string, service?: string) {
         // 如果禁用缓存，则不执行任何操作
         if (!config.useCache) return;
         
-        localStorage.setItem(keyOf(key), value);
+        localStorage.setItem(keyOf(key, service), value);
     },
 
     localSetDual(key: string, value: string) {
@@ -32,11 +35,11 @@ export const cache = {
         this.localSet(key, value);
     },
 
-    localGet(origin: string) {
+    localGet(origin: string, service?: string) {
         // 如果禁用缓存，则始终返回 null
         if (!config.useCache) return null;
         
-        return localStorage.getItem(keyOf(origin));
+        return localStorage.getItem(keyOf(origin, service));
     },
 
     localRemove(origin: string) {

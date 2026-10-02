@@ -2,6 +2,7 @@ import { config } from "@/entrypoints/config/config";
 import { getMainDomain } from "@/entrypoints/main/site-rules";
 import { cancelDub, syncDub } from "@/entrypoints/main/youtube-dub";
 import { cancelAllTranslations, translateText } from "@/entrypoints/translate/translateApi";
+import { subtitleServiceOf } from "@/entrypoints/providers/registry";
 
 const MESSAGE_SOURCE = 'fl-yt-timedtext';
 const OVERLAY_ID = 'fl-youtube-subtitle';
@@ -652,7 +653,8 @@ async function translateSubstackText(text: string) {
 
     try {
         // 拿不到字幕语言；用户已显式开启字幕翻译，短字幕行按页面语言判断反而不准，直接翻译。
-        const translation = await translateText(text, document.title, { useCache: true, skipLanguageCheck: true });
+        // 字幕只用机器翻译，见 subtitleServiceOf。
+        const translation = await translateText(text, document.title, { useCache: true, skipLanguageCheck: true, service: subtitleServiceOf(config.service) });
         if (sessionId !== substackTranslationSessionId) return;
         substackTranslations.set(text, translation);
     } catch {
@@ -714,8 +716,9 @@ async function translateCue(cue: YouTubeCueState) {
 
     try {
         // 字幕行几乎都很短，按页面（YouTube 界面）语言判断不准：改按字幕轨语言判断，拿不到就直接翻译。
+        // 字幕只用机器翻译，见 subtitleServiceOf。
         const translation = shouldTranslateSubtitle(trackLanguage, config.to, config.sourceLanguages)
-            ? await translateText(cue.text, document.title, { useCache: true, skipLanguageCheck: true })
+            ? await translateText(cue.text, document.title, { useCache: true, skipLanguageCheck: true, service: subtitleServiceOf(config.service) })
             : cue.text;
         if (sessionId !== translationSessionId || !cues.includes(cue)) return;
         cue.translation = translation;

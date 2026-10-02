@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { BackgroundMessage, TranslateRequest } from '../entrypoints/utils/messages';
 vi.mock('@/entrypoints/config/config', () => ({ config: { service: 'google' }, configReady: Promise.resolve() }));
-vi.mock('@/entrypoints/providers/service', () => ({ _service: { google: vi.fn(async () => '云端译文') } }));
+vi.mock('@/entrypoints/providers/service', () => ({ _service: { google: vi.fn(async () => '云端译文'), microsoft: vi.fn(async () => '微软译文') } }));
 vi.mock('@/entrypoints/providers/translate/microsoft', () => ({ microsoftTranslate: vi.fn() }));
 vi.mock('@/entrypoints/providers/translate/chrome-builtin-ai', () => ({ chromeAI: { translate: vi.fn(), status: vi.fn(), initialize: vi.fn() } }));
 import { chromeAI } from '../entrypoints/providers/translate/chrome-builtin-ai';
+import { _service } from '../entrypoints/providers/service';
 
 let handler: (message: BackgroundMessage | TranslateRequest, sender: chrome.runtime.MessageSender) => Promise<unknown>;
 let removed: (id: number) => void;
@@ -58,5 +59,14 @@ describe('Chrome 后台消息', () => {
         await vi.waitFor(() => expect(chromeAI.translate).toHaveBeenCalled());
         removed(15);
         expect(await response).toEqual({ success: false, error: '页面已关闭', cancelled: true });
+    });
+
+    it('普通请求按指定服务分发，缺省用当前配置的服务，未注册的服务报错', async () => {
+        await setup();
+        expect(await handler({ context: '', origin: 'Hello', service: 'microsoft' }, sender())).toBe('微软译文');
+        expect(_service.microsoft).toHaveBeenCalledTimes(1);
+        expect(_service.google).not.toHaveBeenCalled();
+        expect(await handler({ context: '', origin: 'Hello' }, sender())).toBe('云端译文');
+        await expect(handler({ context: '', origin: 'Hello', service: 'unknown' }, sender())).rejects.toThrow('未知的翻译服务');
     });
 });

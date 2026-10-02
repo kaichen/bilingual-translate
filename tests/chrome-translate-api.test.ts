@@ -13,6 +13,7 @@ import browser from 'webextension-polyfill';
 import { config } from '../entrypoints/config/config';
 import { sendSuccessMessage } from '../entrypoints/ui/tip';
 import { cancelAllTranslations, translateText } from '../entrypoints/translate/translateApi';
+import { buildKey } from '../entrypoints/translate/cache-key';
 
 const send = vi.mocked(browser.runtime.sendMessage);
 beforeEach(() => {
@@ -97,5 +98,26 @@ describe('Chrome 翻译管线', () => {
         complete({ success: true, result: '你好' });
         expect(await result).toBe('你好');
         expect(localStorage.length).toBe(0);
+    });
+
+    it('指定服务时请求带上该服务，缓存按实际使用的服务读写', async () => {
+        config.service = services.deepseek;
+        send.mockResolvedValue('你好');
+        expect(await translateText('Hello', '标题', { service: services.microsoft })).toBe('你好');
+        expect(send).toHaveBeenCalledWith({ context: '标题', origin: 'Hello', service: services.microsoft });
+        expect(localStorage.getItem(buildKey('Hello', { ...config, service: services.microsoft }))).toBe('你好');
+        expect(localStorage.getItem(buildKey('Hello', config))).toBeNull();
+        // 再次按微软翻译命中缓存；按当前配置的服务翻译不会读到微软的译文
+        expect(await translateText('Hello', '标题', { service: services.microsoft })).toBe('你好');
+        expect(send).toHaveBeenCalledTimes(1);
+        send.mockResolvedValue('您好');
+        expect(await translateText('Hello', '标题')).toBe('您好');
+        expect(send).toHaveBeenLastCalledWith({ context: '标题', origin: 'Hello' });
+    });
+
+    it('指定 Chrome 本地翻译时按它的引擎发原生请求', async () => {
+        send.mockResolvedValue({ success: true, result: '你好' });
+        await translateText('Hello', '', { useCache: false, service: services.chromeTranslator });
+        expect(send).toHaveBeenCalledWith(expect.objectContaining({ chromeAI: { engine: 'translator', sources: [], to: 'zh-Hans' } }));
     });
 });

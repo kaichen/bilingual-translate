@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROVIDERS, servicesType, urls, models, type Need } from "@/entrypoints/providers/registry";
+import { PROVIDERS, servicesType, subtitleServiceOf, urls, models, type Need } from "@/entrypoints/providers/registry";
 import { options, services } from "../entrypoints/config/option";
 
 // 锁定保留服务及其配置能力。
@@ -55,5 +55,12 @@ describe("providers — 单一真相源不变量", () => {
     it("下拉 options.services 的 value 集 == PROVIDERS.name 集", () => {
         const dropdown = options.services.filter((o) => !(o as any).disabled).map((o) => o.value);
         expect(new Set(dropdown)).toEqual(new Set(PROVIDERS.map((p) => p.name)));
+    });
+});
+
+describe("providers — 视频字幕只用机器翻译", () => {
+    it("机器翻译服务原样使用，大模型与 Chrome Gemma 改用微软", () => {
+        for (const s of [services.microsoft, services.google, services.chromeTranslator]) expect(subtitleServiceOf(s)).toBe(s);
+        for (const s of [services.chromeGemma, services.deepseek, services.openrouter, services.custom]) expect(subtitleServiceOf(s)).toBe(services.microsoft);
     });
 });

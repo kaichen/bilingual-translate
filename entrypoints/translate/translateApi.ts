@@ -57,6 +57,9 @@ export async function translateText(origin: string, context: string = document.t
     useCache = config.useCache,
     skipLanguageCheck = false,
   } = options;
+  // 本次实际使用的服务：调用方指定的优先（如视频字幕只用机器翻译），否则跟随当前配置
+  const currentService = () => options.service ?? config.service;
+  const service = currentService();
 
   // 如果目标语言与当前文本语言相同，直接返回原文
   if (!skipLanguageCheck && shouldSkipByLanguage(origin)) {
@@ -65,7 +68,7 @@ export async function translateText(origin: string, context: string = document.t
 
   // 检查缓存
   if (useCache) {
-    const cachedResult = cache.localGet(origin);
+    const cachedResult = cache.localGet(origin, service);
     if (cachedResult) {
       if (isDev) {
         console.log('[翻译API] 命中缓存，直接返回缓存结果');
@@ -79,8 +82,8 @@ export async function translateText(origin: string, context: string = document.t
   // 保存配置以确保计数持久化
   storage.setItem('local:config', JSON.stringify(config));
 
-  const nativeSettings = servicesType.isNativeAI(config.service) ? {
-    engine: chromeEngineOf(config.service), sources: [...config.sourceLanguages], to: config.to,
+  const nativeSettings = servicesType.isNativeAI(service) ? {
+    engine: chromeEngineOf(service), sources: [...config.sourceLanguages], to: config.to,
   } : undefined;
 
   // 使用队列处理翻译请求
@@ -109,7 +112,7 @@ export async function translateText(origin: string, context: string = document.t
           let timer: ReturnType<typeof setTimeout> | undefined;
           try {
             result = await Promise.race([
-              browser.runtime.sendMessage({ context, origin }),
+              browser.runtime.sendMessage({ context, origin, ...(options.service ? { service: options.service } : {}) } satisfies TranslateRequest),
               new Promise<never>((_, reject) => {
                 timer = setTimeout(() => reject(new Error('翻译请求超时')), timeout);
               }),
@@ -123,9 +126,9 @@ export async function translateText(origin: string, context: string = document.t
         }
 
         // 缓存翻译结果
-        if (useCache && (!nativeSettings || (servicesType.isNativeAI(config.service)
-          && chromeEngineOf(config.service) === nativeSettings.engine && config.sourceLanguages.join() === nativeSettings.sources.join() && config.to === nativeSettings.to))) {
-          cache.localSet(origin, result);
+        if (useCache && (!nativeSettings || (servicesType.isNativeAI(currentService())
+          && chromeEngineOf(currentService()) === nativeSettings.engine && config.sourceLanguages.join() === nativeSettings.sources.join() && config.to === nativeSettings.to))) {
+          cache.localSet(origin, result, service);
         }
 
         return result;
@@ -178,4 +181,6 @@ export interface TranslateOptions {
   useCache?: boolean;
   /** 调用方已用 shouldSkipByLanguage 判断过原文（传入的可能是 HTML），不再重复检测 */
   skipLanguageCheck?: boolean;
-} 
+  /** 指定本次使用的翻译服务（缓存键、请求分发都按它）；缺省用 config.service */
+  service?: string;
+}

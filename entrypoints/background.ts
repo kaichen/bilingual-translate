@@ -3,6 +3,7 @@ import {config, configReady} from "@/entrypoints/config/config";
 import {CONTEXT_MENU_IDS} from "@/entrypoints/utils/constant";
 import {type BackgroundMessage, type TranslateRequest} from "@/entrypoints/utils/messages";
 import {microsoftTranslate} from "@/entrypoints/providers/translate/microsoft";
+import {providerOf} from "@/entrypoints/providers/registry";
 
 import { chromeAI } from '@/entrypoints/providers/translate/chrome-builtin-ai';
 
@@ -179,8 +180,13 @@ export default defineBackground({
                         return;
                     }
 
-                    // 无 type：普通翻译请求，交 _service 分发
-                    _service[config.service](message)
+                    // 无 type：普通翻译请求，交 _service 分发；请求可指定服务，未注册的服务直接报错
+                    const service = message.service ?? config.service;
+                    if (!providerOf(service)) {
+                        reject(new Error(`未知的翻译服务：${service}`));
+                        return;
+                    }
+                    _service[service](message)
                         .then(resp => resolve(resp))    // 成功
                         .catch(error => reject(error)); // 失败
                 } catch (error) {

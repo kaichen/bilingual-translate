@@ -26,6 +26,7 @@ export type ExtMessage = BackgroundMessage | ContentMessage;
 export interface TranslateRequest {
     context: string;
     origin: string;
+    service?: string; // 指定分发的服务（如视频字幕固定用机器翻译）；缺省用 config.service
     requestId?: string;
     timeout?: number;
     chromeAI?: ChromeAISettings;

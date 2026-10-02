@@ -19,7 +19,8 @@ export async function promptChunks(base: NativeLanguageModel, text: string, sign
     const chunks: string[] = [];
     async function split(part: string): Promise<void> {
         signal.throwIfAborted();
-        if (await base.measureContextUsage(part, { signal }) <= budget) {
+        // 每个字符按 2 个 token 粗估，明显放得下就不再向模型询问用量。
+        if (part.length * 2 <= budget || await base.measureContextUsage(part, { signal }) <= budget) {
             chunks.push(part);
             return;
         }

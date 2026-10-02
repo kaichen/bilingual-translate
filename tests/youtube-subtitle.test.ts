@@ -19,8 +19,10 @@ import {
   parseSubtitleTimestampMs,
   parseWebVttCues,
   parseYouTubeJson3Cues,
+  renderSubtitleTranslation,
   shouldTranslateSubtitle,
   subtitleLanguageFromUrl,
+  subtitleTranslationOf,
   transcriptRowsToSubtitleCues,
   textTrackCuesToSubtitleCues,
 } from "../entrypoints/main/youtube-subtitle";
@@ -175,5 +177,24 @@ describe("YouTube subtitle language", () => {
     expect(shouldTranslateSubtitle("en", "zh-Hans", ["en", "ja"])).toBe(true);
     expect(shouldTranslateSubtitle("fr", "zh-Hans", ["en"])).toBe(false);
     expect(shouldTranslateSubtitle(undefined, "zh-Hans", ["en"])).toBe(true);
+  });
+});
+
+describe("YouTube subtitle translation line", () => {
+  it("译文为空或与原文相同视为无译文", () => {
+    expect(subtitleTranslationOf("Hello", "你好")).toBe("你好");
+    expect(subtitleTranslationOf("你好", "你好")).toBeNull();
+    expect(subtitleTranslationOf("你好", " 你好 ")).toBeNull();
+    expect(subtitleTranslationOf("Hello", "")).toBeNull();
+  });
+
+  it("翻译中显示 ...，无译文隐藏译文行而不是再显示一遍原文", () => {
+    const el = document.createElement("div");
+    renderSubtitleTranslation(el, undefined);
+    expect([el.textContent, el.style.display]).toEqual(["...", ""]);
+    renderSubtitleTranslation(el, null);
+    expect([el.textContent, el.style.display]).toEqual(["", "none"]);
+    renderSubtitleTranslation(el, "你好");
+    expect([el.textContent, el.style.display]).toEqual(["你好", ""]);
   });
 });

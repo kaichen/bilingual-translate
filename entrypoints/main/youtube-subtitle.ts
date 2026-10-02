@@ -23,7 +23,7 @@ export interface YouTubeCue {
 }
 
 interface YouTubeCueState extends YouTubeCue {
-    translation?: string;
+    translation?: string | null; // undefined=未译完，null=无译文（不需要翻译、译文同原文或翻译失败）
     translating?: boolean;
 }
 
@@ -78,7 +78,7 @@ let substackTranslationSessionId = 0;
 let substackCues: YouTubeCueState[] = [];
 let substackVttUrl = '';
 let substackVttStatus: 'idle' | 'loading' | 'loaded' | 'failed' = 'idle';
-const substackTranslations = new Map<string, string>();
+const substackTranslations = new Map<string, string | null>(); // null=无译文
 const substackTranslating = new Set<string>();
 
 export function parseYouTubeJson3Cues(body: string): YouTubeCue[] {
@@ -125,6 +125,18 @@ export function subtitleLanguageFromUrl(url: string): string | undefined {
 export function shouldTranslateSubtitle(language: string | undefined, to: string, sourceLanguages: string[] = []): boolean {
     if (!language) return true;
     return language !== to && (!sourceLanguages.length || sourceLanguages.includes(language));
+}
+
+// 译文为空或与原文相同即视为无译文（null），浮层只显示原文一行，不把原文再显示一遍。
+export function subtitleTranslationOf(origin: string, translation: string): string | null {
+    const text = translation.trim();
+    return text && text !== origin.trim() ? translation : null;
+}
+
+// 浮层译文行：undefined 显示加载中的 ...，null 隐藏这一行
+export function renderSubtitleTranslation(el: HTMLElement, translation: string | null | undefined) {
+    el.textContent = translation === undefined ? '...' : translation ?? '';
+    el.style.display = translation === null ? 'none' : '';
 }
 
 export function findActiveYouTubeCue(cueList: YouTubeCue[], currentMs: number): YouTubeCue | undefined {
@@ -421,7 +433,7 @@ function translateLookahead() {
     const maxMs = nowMs + LOOKAHEAD_MS;
     cues
         .filter(cue => cue.startMs >= nowMs - 500 && cue.startMs <= maxMs)
-        .filter(cue => !cue.translation && !cue.translating)
+        .filter(cue => cue.translation === undefined && !cue.translating)
         .forEach(cue => translateCue(cue));
 }
 
@@ -502,7 +514,7 @@ function renderSubstackSubtitle() {
     const original = overlay.querySelector<HTMLElement>('.fl-youtube-subtitle-origin');
     const translated = overlay.querySelector<HTMLElement>('.fl-youtube-subtitle-translation');
     if (original) original.textContent = text;
-    if (translated) translated.textContent = substackTranslations.get(text) ?? '...';
+    if (translated) renderSubtitleTranslation(translated, substackTranslations.get(text));
 }
 
 function substackSubtitleEnabled(video: HTMLVideoElement | null, caption: HTMLElement): boolean {
@@ -656,10 +668,10 @@ async function translateSubstackText(text: string) {
         // 字幕只用机器翻译，见 subtitleServiceOf。
         const translation = await translateText(text, document.title, { useCache: true, skipLanguageCheck: true, service: subtitleServiceOf(config.service) });
         if (sessionId !== substackTranslationSessionId) return;
-        substackTranslations.set(text, translation);
+        substackTranslations.set(text, subtitleTranslationOf(text, translation));
     } catch {
         if (sessionId !== substackTranslationSessionId) return;
-        substackTranslations.set(text, text);
+        substackTranslations.set(text, null);
     } finally {
         substackTranslating.delete(text);
         if (sessionId === substackTranslationSessionId && text === substackCurrentText) {
@@ -718,13 +730,13 @@ async function translateCue(cue: YouTubeCueState) {
         // 字幕行几乎都很短，按页面（YouTube 界面）语言判断不准：改按字幕轨语言判断，拿不到就直接翻译。
         // 字幕只用机器翻译，见 subtitleServiceOf。
         const translation = shouldTranslateSubtitle(trackLanguage, config.to, config.sourceLanguages)
-            ? await translateText(cue.text, document.title, { useCache: true, skipLanguageCheck: true, service: subtitleServiceOf(config.service) })
-            : cue.text;
+            ? subtitleTranslationOf(cue.text, await translateText(cue.text, document.title, { useCache: true, skipLanguageCheck: true, service: subtitleServiceOf(config.service) }))
+            : null;
         if (sessionId !== translationSessionId || !cues.includes(cue)) return;
         cue.translation = translation;
     } catch {
         if (sessionId !== translationSessionId || !cues.includes(cue)) return;
-        cue.translation = cue.text;
+        cue.translation = null;
     } finally {
         if (sessionId === translationSessionId && cues.includes(cue)) {
             cue.translating = false;
@@ -766,7 +778,7 @@ function renderSubtitle() {
     const original = overlay.querySelector<HTMLElement>('.fl-youtube-subtitle-origin');
     const translated = overlay.querySelector<HTMLElement>('.fl-youtube-subtitle-translation');
     if (original) original.textContent = activeCue.text;
-    if (translated) translated.textContent = activeCue.translation ?? '...';
+    if (translated) renderSubtitleTranslation(translated, activeCue.translation);
 
     syncDub(activeCue, video);
 }

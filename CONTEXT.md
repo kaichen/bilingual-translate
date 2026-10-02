@@ -32,6 +32,8 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 YouTube / Substack 字幕只用机器翻译：`registry.ts` 的 `subtitleServiceOf(service)` 在当前服务是微软、谷歌、Chrome 本地翻译时原样返回，其余（自定义接口、DeepSeek、OpenRouter，以及实为本地大模型的 Chrome Gemma）改用微软。字幕以 `translateText(..., { service })` 指定服务：请求带上 `service`，后台按 `message.service ?? config.service` 分发（未注册的服务报错），缓存键与是否走 Chrome 原生请求也按实际使用的服务决定；页面队列的并发上限仍按 `config.service`。不传 `service` 的普通翻译行为不变。
 
+字幕行不需要翻译（`shouldTranslateSubtitle` 为假）、译文为空或与原文相同、或翻译失败时记为无译文（`translation: null`，未译完是 `undefined`）：浮层隐藏译文行，只显示原文一行；配音在「朗读译文」模式下对这类行朗读原文（视频已静音，跳过会没声音），朗读语言按原文检测。
+
 ## 分发接线（Dispatch）
 
 `name → 翻译函数` 的绑定，住在 `providers/service.ts`。它 import 各 service 实现（进而 import `config`，带 storage 副作用），与纯数据的注册表**刻意分离**：注册表可测，dispatch 不污染其可测性。

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/entrypoints/config/config", () => ({
   config: {
@@ -7,7 +7,7 @@ vi.mock("@/entrypoints/config/config", () => ({
   },
 }));
 
-import { dubLangTag, dubOriginLang, estimateDubRate, pickDubVoice } from "@/entrypoints/main/youtube-dub";
+import { cancelDub, dubLangTag, dubOriginLang, estimateDubRate, pickDubVoice, syncDub } from "@/entrypoints/main/youtube-dub";
 
 const voices = (...langs: string[]) =>
   langs.map(lang => ({ lang })) as unknown as SpeechSynthesisVoice[];
@@ -70,5 +70,30 @@ describe("estimateDubRate", () => {
 
   it("时长非法时回退 rate=1", () => {
     expect(estimateDubRate("anything", 0)).toBe(1);
+  });
+});
+
+describe("syncDub", () => {
+  const speak = vi.fn();
+  const setup = () => {
+    vi.stubGlobal("speechSynthesis", { speak, cancel: vi.fn(), getVoices: () => [], pending: false });
+    vi.stubGlobal("SpeechSynthesisUtterance", class { lang = ""; rate = 1; voice?: unknown; constructor(public text: string) {} });
+    return { paused: false, muted: false } as unknown as HTMLVideoElement;
+  };
+  afterEach(() => { cancelDub(); vi.unstubAllGlobals(); speak.mockReset(); });
+
+  it("译文未完成时不朗读，有译文朗读译文", () => {
+    const video = setup();
+    syncDub({ startMs: 0, durMs: 2000, text: "Hello" }, video);
+    expect(speak).not.toHaveBeenCalled();
+    syncDub({ startMs: 0, durMs: 2000, text: "Hello", translation: "你好" }, video);
+    expect(speak.mock.calls[0][0].text).toBe("你好");
+  });
+
+  it("无译文的行朗读原文", () => {
+    const video = setup();
+    syncDub({ startMs: 0, durMs: 2000, text: "The quick brown fox jumps over the lazy dog near the river bank", translation: null }, video);
+    expect(speak.mock.calls[0][0].text).toBe("The quick brown fox jumps over the lazy dog near the river bank");
+    expect(speak.mock.calls[0][0].lang).toBe("en");
   });
 });

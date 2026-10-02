@@ -18,7 +18,7 @@ interface DubCue {
     startMs: number;
     durMs: number;
     text: string;
-    translation?: string;
+    translation?: string | null; // undefined=未译完，null=无译文
 }
 
 let lastSpokenKey = '';
@@ -64,7 +64,8 @@ export function syncDub(cue: DubCue, video: HTMLVideoElement) {
     }
     if (video.paused || !('speechSynthesis' in window)) return;
 
-    const useOrigin = config.youtubeDubbingSource === 'origin';
+    // 无译文的行（不需要翻译或翻译失败）朗读原文：视频已静音，跳过会让这一行没有声音
+    const useOrigin = config.youtubeDubbingSource === 'origin' || cue.translation === null;
     const text = useOrigin ? cue.text : cue.translation;
     if (!text) return;
 

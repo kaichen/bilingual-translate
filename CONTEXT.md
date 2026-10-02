@@ -67,7 +67,7 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 `detectTextLanguage(text, pageLanguage)` 返回 `{ language, certain }`，顺序：先看文字种类（假名→日语，韩文→韩语，纯汉字→日语页面按日语、其余按中文，中日韩文字按 3 倍权重压过夹杂的拉丁字母，持平算中日韩），这些结果确定；拉丁/西里尔字母满 60 字符才用 franc（结果确定），否则跟随页面语言（非拉丁语页面里的短拉丁文本按英语，短西里尔文本默认俄语），这类结果**不确定**；阿拉伯、泰、希腊、天城文等其他文字占多数时不论长短都用 franc，认不出就当未知，绝不取页面语言。不确定的结果只用来判断「已是目标语言」，不用来把文本排除出原文语言列表。页面语言以函数传入，只有纯汉字、短拉丁/西里尔文本这几个分支才求值。`getPageLanguage` 用 `collectPageSample` 递归 `childNodes` 从 `main, article` 或 body 收集前 2000 字符（不用 `innerText`，免得强制布局；跳过 script/style/noscript、`[hidden]`、本扩展注入的译文/加载/重试/提示元素和单语模式下已换成译文的 `[data-bt-translated]` 节点，双语模式的原文节点保留），不足 200 字符时用 `html lang` / meta 声明。结果按地址缓存：样本不足 2 秒过期、样本足够 10 秒过期，地址变了立即重算。
 
-Chrome 本地服务不在页面侧按原文语言列表过滤，由后台 `resolveSource` 用 `LanguageDetector` 逐段判断：置信度低于 0.5 或检测不出时，只勾选一种原文语言就按它翻译，否则保持原样；检测结果不在列表内也保持原样。谷歌、微软一律让服务自动检测。
+Chrome 本地服务不在页面侧按原文语言列表过滤，由后台 `resolveSource` 用 `LanguageDetector` 逐段判断。未勾选原文语言时，只要检测出语言就翻译，不看置信度；检测不出才保持原样。勾选了原文语言时，检测结果必须在列表内，否则保持原样；置信度低于 0.5 或检测不出时，只勾选一种就按它翻译，多选则保持原样。只勾选一种原文语言时语言检测器可有可无：检测器不存在或未下载就直接按该语言翻译，也不计入可用性和初始化。谷歌、微软一律让服务自动检测。
 
 ## Chrome 内置 AI
 
@@ -75,7 +75,7 @@ Chrome 本地服务不在页面侧按原文语言列表过滤，由后台 `resol
 
 Gemma 4 模型由 Chrome 的实验配置和组件分发管理，扩展不传模型名称。Prompt 的真实输入语言包含英语系统提示和源语言，输出声明目标语言；翻译提示与分块逻辑位于 `providers/llm/chrome-prompt.ts`。
 
-下载由设置面板的 `initializeChromeAI` 显式启动，`getChromeAIStatus` 返回下载进度。后台跨页面串行执行原生任务，复用检测器和当前语言对会话，空闲 60 秒销毁。Prompt 每块从仅含系统提示的基础会话克隆并释放，预留一半上下文给输出。
+下载由设置面板的 `initializeChromeAI` 显式启动，`getChromeAIStatus` 返回下载进度。后台跨页面串行执行原生任务，复用检测器和当前语言对会话（会话键用 `chromeLanguage()` 归一化后的源、目标语言，`zh-Hans` 与 `zh` 视为同一个），空闲 60 秒销毁。Prompt 每块从仅含系统提示的基础会话克隆并释放，预留一半上下文给输出。
 
 大模型会话必须带 `samplingMode: 'most-predictable'`，否则 Chrome 154 的 Gemma 4 直接返回 unavailable。页面一次放行最多 8 个大模型请求，后台把排队中同配置的短段落用 `[[n]]` 标记合并成一次推理（`translateBatchWithPrompt`）；标记缺失或重复时逐段重译。短文本按每字符 2 个 token 粗估，不调用 `measureContextUsage`。
 

@@ -163,6 +163,8 @@ export function applySiteRuleStyles(node: Element, rule: SiteRule | undefined = 
 export function isIgnoredBySiteRule(node: Element, rule: SiteRule | undefined = getSiteRule()): boolean {
     const selector = [
         DEFAULT_IGNORE_SELECTOR,
+        // 通用扫描跳过侧栏；仅扫描显式内容选择器的站点沿用自身侧栏规则。
+        rule?.autoScan === false ? undefined : "aside",
         rule?.ignoreSelector,
     ].filter(Boolean).join(", ");
 
@@ -267,12 +269,13 @@ export function querySiteRuleNodes(rootNode: Node, rule: SiteRule | undefined = 
 }
 
 export function selectSiteRuleNode(node: Element, rule: SiteRule | undefined = getSiteRule()): Element | {skip: boolean} | false {
+    if (isIgnoredBySiteRule(node, rule)) return {skip: true};
     if (!rule) return false;
 
     // 命令式跳过逃生舱（原 selectCompatFn 内联的 shouldSkip*），仅此单节点路径生效
     if (rule.skipNode?.(node)) return {skip: true};
 
-    if (!isWithinSiteRuleRoots(node, rule) || isIgnoredBySiteRule(node, rule)) {
+    if (!isWithinSiteRuleRoots(node, rule)) {
         return {skip: true};
     }
 

@@ -4,6 +4,7 @@ import {
   SOURCE_KEY_ATTR,
   getTranslationTargetText,
   grabAllNode,
+  grabNode,
   grabTranslationTarget,
   insertTranslationNodeForTarget,
   isPageChromeHeaderFooter,
@@ -41,6 +42,59 @@ function keyedTranslationSpan(text: string, sourceKey: string): HTMLSpanElement 
   span.setAttribute(SOURCE_KEY_ATTR, sourceKey);
   return span;
 }
+
+describe("侧栏翻译跳过", () => {
+  beforeEach(() => {
+    (window as Window & { happyDOM?: { setURL(url: string): void } }).happyDOM?.setURL("https://claude.dev/blog/getting-started-with-claude-code-mods/");
+    document.body.innerHTML = `
+      <article>
+        <h1>An article about building your first extension</h1>
+        <p>The article body should remain available for translation.</p>
+        <aside class="rail" style="position: sticky">
+          <h2>Explore the sections in this article</h2>
+          <div><a href="#section"><span>Build your first extension</span></a></div>
+          <p>Keep reading to explore the remaining sections.</p>
+        </aside>
+      </article>
+    `;
+  });
+
+  it.each([
+    "https://claude.dev/blog/getting-started-with-claude-code-mods/",
+    "https://example.com/article",
+  ])("全文翻译跳过 aside 并保留正文：%s", url => {
+    (window as Window & { happyDOM?: { setURL(url: string): void } }).happyDOM?.setURL(url);
+
+    expect(collectTranslationTargets(document.querySelector("article") as Element).map(getTranslationTargetText)).toEqual([
+      "An article about building your first extension",
+      "The article body should remain available for translation.",
+    ]);
+  });
+
+  it("悬停翻译跳过侧栏的标题、链接、段落和文本节点", () => {
+    const sidebar = document.querySelector("aside") as Element;
+
+    for (const node of sidebar.querySelectorAll("h2, a, span, p")) {
+      expect(grabNode(node)).toBe(false);
+      expect(grabTranslationTarget(node)).toBe(false);
+      expect(grabTranslationTarget(node.firstChild)).toBe(false);
+    }
+    const paragraph = document.querySelector("article > p");
+    expect(grabNode(paragraph)).toBe(paragraph);
+  });
+
+  it("侧栏本身及其内部新增子树不会成为翻译目标", () => {
+    const sidebar = document.querySelector("aside") as Element;
+    const added = document.createElement("section");
+    added.innerHTML = "<p>Additional sidebar details loaded after scrolling.</p>";
+    sidebar.append(added);
+
+    expect(collectTranslationTargets(sidebar)).toEqual([]);
+    expect(collectTranslationTargets(added)).toEqual([]);
+    expect(collectTranslationTargets(added.firstElementChild as Element)).toEqual([]);
+    expect(grabTranslationTarget(added.firstElementChild)).toBe(false);
+  });
+});
 
 describe("translation target normalization", () => {
   beforeEach(() => {

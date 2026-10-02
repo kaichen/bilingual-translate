@@ -61,6 +61,7 @@ let currentVideoId = '';
 let videoSessionId = 0;
 let translationSessionId = 0;
 let ccActive = false;
+let trackLanguage: string | undefined; // 当前字幕轨的语言（timedtext 地址上的 tlang / lang），拿不到为 undefined
 let ccObserver: MutationObserver | null = null;
 let waitAbort: AbortController | null = null;
 let videoTimeCleanup: (() => void) | null = null;
@@ -104,6 +105,25 @@ export function parseYouTubeJson3Cues(body: string): YouTubeCue[] {
     }
 
     return result;
+}
+
+// timedtext 地址上的字幕语言：YouTube 自动翻译时文字是 tlang，否则是 lang。中文统一记为 zh-Hans，与页面侧检测一致。
+export function subtitleLanguageFromUrl(url: string): string | undefined {
+    let params: URLSearchParams;
+    try {
+        params = new URL(url, 'https://www.youtube.com').searchParams;
+    } catch {
+        return undefined;
+    }
+    const primary = (params.get('tlang') || params.get('lang') || '').trim().toLowerCase().split(/[-_]/)[0];
+    if (!primary) return undefined;
+    return primary === 'zh' ? 'zh-Hans' : primary;
+}
+
+// 字幕是否需要翻译：已是目标语言、或勾选了原文语言而字幕语言不在其中则不翻译；语言未知时翻译。
+export function shouldTranslateSubtitle(language: string | undefined, to: string, sourceLanguages: string[] = []): boolean {
+    if (!language) return true;
+    return language !== to && (!sourceLanguages.length || sourceLanguages.includes(language));
 }
 
 export function findActiveYouTubeCue(cueList: YouTubeCue[], currentMs: number): YouTubeCue | undefined {
@@ -304,6 +324,7 @@ function handleTimedtextMessage(event: MessageEvent) {
     const parsedCues = parseYouTubeJson3Cues(data.body);
     if (!parsedCues.length) return;
 
+    trackLanguage = subtitleLanguageFromUrl(data.url);
     cues = mergeCueTranslations(parsedCues, cues);
     translateLookahead();
     renderSubtitle();
@@ -353,6 +374,7 @@ function resetVideoState() {
     cancelVideoTranslations();
     cancelDub();
     cues = [];
+    trackLanguage = undefined;
     ccActive = false;
     ccObserver?.disconnect();
     ccObserver = null;
@@ -629,7 +651,8 @@ async function translateSubstackText(text: string) {
     const sessionId = substackTranslationSessionId;
 
     try {
-        const translation = await translateText(text, document.title, { useCache: true });
+        // 拿不到字幕语言；用户已显式开启字幕翻译，短字幕行按页面语言判断反而不准，直接翻译。
+        const translation = await translateText(text, document.title, { useCache: true, skipLanguageCheck: true });
         if (sessionId !== substackTranslationSessionId) return;
         substackTranslations.set(text, translation);
     } catch {
@@ -690,7 +713,10 @@ async function translateCue(cue: YouTubeCueState) {
     const sessionId = translationSessionId;
 
     try {
-        const translation = await translateText(cue.text, document.title, { useCache: true });
+        // 字幕行几乎都很短，按页面（YouTube 界面）语言判断不准：改按字幕轨语言判断，拿不到就直接翻译。
+        const translation = shouldTranslateSubtitle(trackLanguage, config.to, config.sourceLanguages)
+            ? await translateText(cue.text, document.title, { useCache: true, skipLanguageCheck: true })
+            : cue.text;
         if (sessionId !== translationSessionId || !cues.includes(cue)) return;
         cue.translation = translation;
     } catch {

@@ -19,6 +19,8 @@ import {
   parseSubtitleTimestampMs,
   parseWebVttCues,
   parseYouTubeJson3Cues,
+  shouldTranslateSubtitle,
+  subtitleLanguageFromUrl,
   transcriptRowsToSubtitleCues,
   textTrackCuesToSubtitleCues,
 } from "../entrypoints/main/youtube-subtitle";
@@ -152,5 +154,26 @@ describe("YouTube active subtitle lookup", () => {
     expect(findActiveYouTubeCue(cues, 2999)).toBe(cues[0]);
     expect(findActiveYouTubeCue(cues, 3000)).toBeUndefined();
     expect(findActiveYouTubeCue(cues, 4500)).toBe(cues[1]);
+  });
+});
+
+describe("YouTube subtitle language", () => {
+  it("从 timedtext 地址取字幕语言：自动翻译时取 tlang", () => {
+    const base = "https://www.youtube.com/api/timedtext?v=abc&fmt=json3";
+    expect(subtitleLanguageFromUrl(`${base}&lang=en`)).toBe("en");
+    expect(subtitleLanguageFromUrl(`${base}&lang=en-US&kind=asr`)).toBe("en");
+    expect(subtitleLanguageFromUrl(`${base}&lang=en&tlang=ja`)).toBe("ja");
+    expect(subtitleLanguageFromUrl(`${base}&lang=zh-Hant`)).toBe("zh-Hans");
+    expect(subtitleLanguageFromUrl(`${base}&lang=zh-CN`)).toBe("zh-Hans");
+    expect(subtitleLanguageFromUrl(base)).toBeUndefined();
+    expect(subtitleLanguageFromUrl("/api/timedtext?lang=fr")).toBe("fr");
+  });
+
+  it("已是目标语言或不在原文语言列表内不翻译，语言未知时翻译", () => {
+    expect(shouldTranslateSubtitle("en", "zh-Hans")).toBe(true);
+    expect(shouldTranslateSubtitle("zh-Hans", "zh-Hans")).toBe(false);
+    expect(shouldTranslateSubtitle("en", "zh-Hans", ["en", "ja"])).toBe(true);
+    expect(shouldTranslateSubtitle("fr", "zh-Hans", ["en"])).toBe(false);
+    expect(shouldTranslateSubtitle(undefined, "zh-Hans", ["en"])).toBe(true);
   });
 });

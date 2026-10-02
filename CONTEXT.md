@@ -63,7 +63,7 @@ UI（`Main.tsx`）据 `needs` 决定显示哪些输入框；约定**勿在业务
 
 ## 语言检测
 
-页面侧只有一个语言闸：`utils/common.ts` 的 `shouldSkipTranslation`（业务代码经 `translateApi.ts` 的 `shouldSkipByLanguage` 调用）。没有文字、已是目标语言、或**确定**不在原文语言列表内的文本跳过；判断不出语言时放行。`trans.ts` 在插入 spinner 前对 `textContent` 判断一次，随后以 `skipLanguageCheck` 调 `translateText`，不对 HTML 原文重复检测。
+页面侧只有一个语言闸：`utils/common.ts` 的 `shouldSkipTranslation`（业务代码经 `translateApi.ts` 的 `shouldSkipByLanguage` 调用）。没有文字、已是目标语言、或**确定**不在原文语言列表内的文本跳过；判断不出语言时放行。`trans.ts` 在插入 spinner 前对 `textContent` 判断一次，随后以 `skipLanguageCheck` 调 `translateText`，不对 HTML 原文重复检测。视频字幕不走这道闸（字幕行几乎都很短，按页面语言判断会变成按 YouTube 界面语言判断）：YouTube 字幕用 `subtitleLanguageFromUrl` 从 timedtext 地址取字幕轨语言（自动翻译时取 `tlang`，否则 `lang`），经 `shouldTranslateSubtitle` 判断——已是目标语言、或勾选了原文语言而字幕语言不在其中则不翻译，其余以 `skipLanguageCheck` 调 `translateText`，拿不到语言就直接翻译；Substack 字幕拿不到语言，直接 `skipLanguageCheck` 翻译。
 
 `detectTextLanguage(text, pageLanguage)` 返回 `{ language, certain }`，顺序：先看文字种类（假名→日语，韩文→韩语，纯汉字→日语页面按日语、其余按中文，中日韩文字按 3 倍权重压过夹杂的拉丁字母，持平算中日韩），这些结果确定；拉丁/西里尔字母满 60 字符才用 franc（结果确定），否则跟随页面语言（非拉丁语页面里的短拉丁文本按英语，短西里尔文本默认俄语），这类结果**不确定**；阿拉伯、泰、希腊、天城文等其他文字占多数时不论长短都用 franc，认不出就当未知，绝不取页面语言。不确定的结果只用来判断「已是目标语言」，不用来把文本排除出原文语言列表。页面语言以函数传入，只有纯汉字、短拉丁/西里尔文本这几个分支才求值。`getPageLanguage` 用 `collectPageSample` 递归 `childNodes` 从 `main, article` 或 body 收集前 2000 字符（不用 `innerText`，免得强制布局；跳过 script/style/noscript、`[hidden]`、本扩展注入的译文/加载/重试/提示元素和单语模式下已换成译文的 `[data-bt-translated]` 节点，双语模式的原文节点保留），不足 200 字符时用 `html lang` / meta 声明。结果按地址缓存：样本不足 2 秒过期、样本足够 10 秒过期，地址变了立即重算。
 
